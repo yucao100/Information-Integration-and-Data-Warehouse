@@ -25,10 +25,11 @@ chmod 400 <KEYPAIR>.pem	# Copy key into <KEYPAIR>.pem
 
 # Set path environment variable
 export EC2_KEYPAIR=/home/sean/Documents/UTC/REU_2012/.ec2
-export EC2_UTL=https://ec2.us-east-1.amazonaws.com					# export EC2_UTL=https://ec2.<REGION>.amazonaws.com
-export EC2_PRIVATE_KEY=${EC2_KEYPAIR}/pk-YOBDXXIN6OA6JJQ24L6LAL7RGAEGXXXG.pem		# export EC2_PRIVATE_KEY=${EC2_KEYPAIR}/pk-<>.pem
+export EC2_UTL=https://ec2.us-east-1.amazonaws.com  # export EC2_UTL=https://ec2.<REGION>.amazonaws.com
+export EC2_PRIVATE_KEY=${EC2_KEYPAIR}/pk-YOBDXXIN6OA6JJQ24L6LAL7RGAEGXXXG.pem   # export EC2_PRIVATE_KEY=${EC2_KEYPAIR}/pk-<>.pem
 export EC2_CERT=${EC2_KEYPAIR}/cert-YOBDXXIN6OA6JJQ24L6LAL7RGAEGXXXG.pem		# export EC2_CERT=${EC2_KEYPAIR}/cert-<>.pem
 export EC2_HOME=/usr/lib/ec2-api-tools
+
 # export AWS_RDS_HOME=
 export JAVA_HOME=/usr/bin/java
 source ~/.bashrc
