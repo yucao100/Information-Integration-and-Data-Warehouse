@@ -1,0 +1,12 @@
+#overlay {
+	position: absolute;
+	color: #FFF;
+	margin-left: 250px;
+}
+
+.container {
+	display: inline-block;
+	width: 48%;
+	min-height: 1px;
+	height: 30%;
+}

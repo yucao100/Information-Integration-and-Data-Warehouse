@@ -1,0 +1,395 @@
+<html>
+<head>
+
+<script src="mrdoob-three.js-46c0a84\build\Three.js"></script>
+<script src="jquery-1.7.2.min.js"></script>
+<script src="rainbowvis.js"></script>
+<script src="jqueryFileTree/jqueryFileTree.js"></script>
+<link href="jqueryFileTree/jqueryFileTree.css" rel="stylesheet" type="text/css" media="screen" />
+
+<link href="styles.css" rel="stylesheet" type="text/css" media="screen" />
+
+<script type="text/javascript">
+//By Chris Lenk for UTC REU 2012
+//Don't forget to set variable 'root' in the PHP connector script
+
+    $(document).ready( function() {
+        
+        $('#filepick').fileTree({ root: 'eegdata/', script: 'jqueryFileTree/connectors/jqueryFileTree.php', multiFolder: false }, function(file) { 
+            halt = true;
+            eegFolder = file;
+            loadEEGdata();
+            halt = false;
+        }, true); //True to only show folders
+        
+        //$(window).bind('resize', resize); //Sets up resizing of canvas
+
+    });
+</script>
+
+<script type="text/javascript">
+//By Chris Lenk for UTC REU 2012
+
+    var camera;
+    var scene;
+    var canvas;
+    var renderer;
+    var camCntrl;
+    //Dimensions - must be kept the same as in resize()
+    var width;// = window.innerWidth / 3;
+    var height;// = window.innerHeight / 3;
+    //Remember initial values for camera when resizing
+    var origHeight;// = window.innerHeight / 3;
+    var tanFOV;
+    //Camera variables
+    var view_angle = 45;
+    var aspect;// = width / height;
+    var near = 1;
+    var far = 10000;
+
+    var head;
+    var clock = new THREE.Clock();
+
+    //Keys
+    ROT = 90;
+    ZOOM = 88;
+    PAN = 67;
+
+    BLENDERSCALE = 7;
+    FPS = 12;
+    var radiusEEG = 1; //radius of the EEG nodes in the visualization
+    var halt = false; //True stops the animation
+    var animOffset = 0; //Starting morphTarget in the animation
+    var duration = 1667; //in ms
+    var keyframes = 40;
+    var interpolation = duration / keyframes;
+    var lastKeyframe = 0;
+    var currentKeyframe = 0;
+
+    var humanAvgWalkSpeed = 1.3;
+    var steps = 0;
+    var dist = 0;
+    var speed = 1000;
+
+    //EEG Nodes
+    var left1;
+    var left2;
+    var left3;
+    var left4;
+    var left5;
+    var left6;
+    var left7;
+    var right1;
+    var right2;
+    var right3;
+    var right4;
+    var right5;
+    var right6;
+    var right7;
+    var eegNodes = [];
+
+    var eegFilenames = [
+        'left1',
+        'left2',
+        'left3',
+        'left4',
+        'left5',
+        'left6',
+        'left7',
+        'right1',
+        'right2',
+        'right3',
+        'right4',
+        'right5',
+        'right6',
+        'right7'];
+    //var eegPath = ""; // path to eeg value text files
+    var eegFolder = 'eegdata/George/'; //default/initial
+    var eegVals; // array of arrays - one for each file/node, containing all that node's values
+
+    //Set up color gradient
+    var gradient = new Rainbow();
+    //gradient.setSpectrum('14A814', 'FF0000');
+    // From documentation: `rainbow.setNumberRange(minNumber, maxNumber);` sets the number range of the Rainbow object. By default, it is 0 to 100.
+
+    //Updates the canvas size on window resize
+    //Uses solution from WestLangley: https://github.com/mrdoob/three.js/issues/1406#issuecomment-4207064
+    function canvasResize() {
+        if (canvas) {
+            //width = window.innerWidth / 3; //Keep these the same as above when the variables width and height are declared
+            //height = window.innerHeight / 3;
+
+
+            setCanvasSize();
+
+            //Adjust the camera so objects look the same when resizing
+            camera.aspect = width / height;
+            //camera.fov = ( 360 / Math.PI ) * Math.atan( tanFOV * ( width / origHeight ) );
+            camera.updateProjectionMatrix();
+
+            //renderer.setSize(width, height);
+            //resetCam();
+
+        }
+    }
+
+    function setCanvasSize() {
+        width = canvas.clientWidth;
+        height = canvas.clientHeight;
+        renderer.setSize(width, height);
+    }
+
+    //Initializes the scene
+    function init() {
+        //Set up the canvas to render on
+        canvas = document.getElementById("container");
+
+        //Create and start the renderer and add it to the canvas
+        renderer = new THREE.WebGLRenderer( {antialias: true} );
+        setCanvasSize(); //renderer.setSize(width, height);
+        renderer.shadowMapEnabled = true; //Turn on shadows
+        renderer.shadowMapSoft = true; //Anti-aliasing
+        canvas.appendChild(renderer.domElement);
+        
+        //Create camera and scene
+        scene = new THREE.Scene();
+        aspect = width / height;
+        addCamera();
+
+        tanFOV = Math.tan( ( ( Math.PI / 180 ) * camera.fov / 2 ) ); //save it for resizing
+        //alert (height);
+        origHeight = height;
+
+        //Disable text cursor on the canvas
+        canvas.onselectstart = function() {
+            return false;
+        }
+
+        //Add stuff to the scene
+        addObjs(scene);
+        addLights(scene);
+        
+        //Draw it
+        renderer.setClearColorHex(0x000000, 1.0);
+        renderer.clear(); //Sets the background color
+        renderer.render(scene, camera);
+
+        //Set up the keys to speed up/down the walking speed
+        document.addEventListener("keydown", handleKey, false);
+
+        //Set up canvas resizing
+        //window.addEventListener('resize', canvasResize, false);
+        
+        //Load the text files containing eeg values data
+        loadEEGdata();
+
+        //kickstart animation
+        animate();
+    }
+
+    function handleKey(e) {
+        if (e.keyCode == 32) { //Spacebar
+            resetCam();
+        } else if (e.keyCode == 38 && speed < 5000) { //Up Arrow
+            speed += 100; //Speed up
+        } else if (e.keyCode == 40 && speed > 0) { //Down Arrow
+            speed -= 100; //Slow down
+        } else if (e.keyCode == 49) { //Number 1 - sets camera to show left side
+            resetCam();
+            camera.position.set(55,0,0);
+        } else if (e.keyCode == 50) { //Number 2 - sets camera to show front
+            resetCam();
+            camera.position.set(0,0,55);
+        } else if (e.keyCode == 51) { //Number 3 - sets camera to show right side
+            resetCam();
+            camera.position.set(-55,0,0);
+        } else if (e.keyCode == 52) { //Number 4 - sets camera to show back
+            resetCam();
+            camera.position.set(0,0,-55);
+        }
+    }
+
+    function loadEEGdata() {
+        eegVals = [];
+        for (j = 0; j < eegFilenames.length; j++) {
+            jQuery.get(eegFolder+eegFilenames[j]+".txt", function(data) {
+                //var array = [];
+                        //if (j == 1) {
+                            //alert(data.split(","));
+                            //var k = data.split(",")
+                            //alert(k[0]);
+                        //}
+                eegVals.push(data.split(","));
+                //eegVals.push(array);
+            });
+        }
+    }
+
+    //Puts the camera back at the starting position, rotation, etc
+    function resetCam(e) {
+        scene.remove(camera);
+        addCamera();
+    }
+
+    function addCamera() {
+        camera = new THREE.PerspectiveCamera( view_angle, aspect, near, far );
+        scene.add(camera);
+        //Pull camera back from its original starting point of (0,0,0)
+        //camera.position.set(30,40,25); //try multiples of 6,8,5
+        camera.position.set(55,0,0);
+
+        //Controls to move the camera
+        camCntrl = new THREE.TrackballControls(camera, renderer.domElement);
+        camCntrl.keys = [ROT, ZOOM, PAN]; //rotate, zoom, pan
+
+        //Reset the camera when spacebar pressed
+        document.addEventListener("keydown", handleKey, false);
+    }
+
+    function addObjs() {
+        var loader = new THREE.JSONLoader(true);
+        loader.load ( 'Lee-Perry-Smith.js', function (geometry) {
+            var material = new THREE.MeshLambertMaterial(
+                {color: 0x777777}
+            );
+
+            head = new THREE.Mesh( geometry, material );
+            head.scale.set(BLENDERSCALE, BLENDERSCALE, BLENDERSCALE);
+            head.position.set(0,0,9);
+            head.overdraw = true;
+            head.castShadow = true;
+            head.receiveShadow = true;
+            scene.add(head);
+        } );
+
+        //x is left/right, y is up/down, z is away from front of head
+        left1 = addSphere(6,8,9.75);
+        left2 = addSphere(6,12.75,4);
+        left3 = addSphere(8.5,2,7);
+        left4 = addSphere(9.25,6,5);
+        left5 = addSphere(11.5,5,-5);
+        left6 = addSphere(11,-1,-4.5);
+        left7 = addSphere(9.1,2,-13);
+        
+        right1 = addSphere(-6,9,9.25);
+        right2 = addSphere(-6,12.5,4);
+        right3 = addSphere(-8.75,2,7);
+        right4 = addSphere(-9.25,6,5);
+        right5 = addSphere(-11,5,-5);
+        right6 = addSphere(-10.75,-1,-4.5);
+        right7 = addSphere(-7.8,2,-13);
+
+        eegNodes.push(left1);
+        eegNodes.push(left2);
+        eegNodes.push(left3);
+        eegNodes.push(left4);
+        eegNodes.push(left5);
+        eegNodes.push(left6);
+        eegNodes.push(left7);
+        eegNodes.push(right1);
+        eegNodes.push(right2);
+        eegNodes.push(right3);
+        eegNodes.push(right4);
+        eegNodes.push(right5);
+        eegNodes.push(right6);
+        eegNodes.push(right7);
+    }
+
+    function addLights() {
+        //Create a spot light for shadows and add it
+        var spotLight = new THREE.SpotLight(0xFFFFFF);
+        spotLight.position.set(0,400,0);
+        spotLight.castShadow = true;
+        spotLight.shadowDarkness = 0.1;
+        scene.add(spotLight);
+
+        //Light for the left side of the face
+        var leftLight = new THREE.DirectionalLight(0xFFFFFF);
+        leftLight.position.set(100,0,0);
+        //leftLight.castShadow = true;
+        scene.add(leftLight);
+
+        //Light for the right side of the face
+        var rightLight = new THREE.DirectionalLight(0xFFFFFF);
+        rightLight.position.set(-100,0,0);
+        //rightLight.castShadow = true;
+        scene.add(rightLight);
+
+        //Ambient lighting
+        var ambLight = new THREE.AmbientLight(0x111111);
+        scene.add(ambLight);
+    }
+
+    function addSphere(x, y, z) {
+        var segments = 16;
+        var rings = 16;
+        var sphereMaterial = new THREE.MeshLambertMaterial(
+            {color: 0xFF0000} //0x14A814 //0xFF0000
+        );
+
+        var node;
+        node = new THREE.Mesh(
+            new THREE.SphereGeometry( radiusEEG, segments, rings ), //Geometry
+            sphereMaterial //Material
+        );
+        node.position.set(x,y,z);
+        node.castShadow = true;
+        node.receiveShadow = true;
+        scene.add(node);
+        return node;
+    }
+
+
+
+    //Animation Loop
+    function animate() {
+        var time = clock.getElapsedTime();
+
+                $('#overlay').html( time );
+
+        for (i = 0; i < eegFilenames.length; i++) {
+            if (eegVals && eegVals[i]) {
+                var j = Math.floor((time*5)%eegVals.length); // Adjust the time multiplier to speed up/slow down animation
+                if (eegVals[i][j]) {
+                    eegNodes[i].material.color = new THREE.Color( '0x' + gradient.colourAt( eegVals[i][j] ) );
+                }
+                
+            }
+        }
+
+        canvasResize();
+
+        //Update the view
+        camCntrl.update();
+        camera.lookAt(scene.position);
+        renderer.render(scene, camera);
+
+        if (!halt) {
+            window.requestAnimationFrame(animate, renderer.domElement);
+        }
+    }
+
+</script>
+
+
+</head>
+
+
+<body onLoad="init()">
+
+<div class="example">
+    <div id="filepick" class='demo'></div>
+</div>
+
+<div id="overlay">
+</div>
+
+<div id="container" class="container"></div>
+
+<p>Click and drag to move camera. Hold <b>Z</b> to rotate, <b>X</b> to zoom, or <b>C</b> to pan.<br/>
+Press <b>1</b> for left view, <b>2</b> for front view, <b>3</b> for right view, or <b>4</b> for back view.</p>
+
+<p>Uses the Lee Perry-Smith head found <a href="http://www.ir-ltd.net/infinite-3d-head-scan-released/">here</a>.</p>
+
+</body>
+</html>

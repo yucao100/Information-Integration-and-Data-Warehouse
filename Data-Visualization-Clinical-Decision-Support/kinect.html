@@ -1,0 +1,353 @@
+<html>
+<head>
+
+<script src="mrdoob-three.js-46c0a84\build\Three.js"></script>
+<script src="jquery-1.7.2.min.js"></script>
+<script src="jqueryFileTree/jqueryFileTree.js"></script>
+<link href="jqueryFileTree/jqueryFileTree.css" rel="stylesheet" type="text/css" media="screen" />
+
+<script type="text/javascript">
+//By Chris Lenk for UTC REU 2012
+//Don't forget to set variable 'root' in the PHP connector script
+
+    $(document).ready( function() {
+        
+        $('#filepick').fileTree({ root: 'kinectdata/Kinect_Skeletal_Point_Data/', script: 'jqueryFileTree/connectors/jqueryFileTree.php', multiFolder: false }, function(file) { 
+
+                                    halt = true;
+                                    subfolder = file;
+                                    loadCoords();
+                                    halt = false;
+
+        }, true); //True to only show folders
+        
+    });
+</script>
+
+<script type="text/javascript">
+    var camera;
+    var scene;
+    var renderer;
+    var camCntrl;
+    //Dimensions
+    var width = 800;//window.innerWidth;
+    var height = 700;//window.innerHeight;
+    //Camera variables
+    var view_angle = 45;
+    var aspect = width / height;
+    var near = 0.1;
+    var far = 10000;
+    FPS = 12;
+    //Skeletal nodes
+    var head;
+    var shoulderCenter;
+    var shoulderRight;
+    var elbowRight;
+    var wristRight;
+    var handRight;
+    var shoulderLeft;
+    var elbowLeft;
+    var wristLeft;
+    var handLeft;
+    var spine;
+    var hipRight;
+    var hipCenter;
+    var hipLeft;
+    var kneeRight;
+    var ankleRight;
+    var footRight;
+    var kneeLeft;
+    var ankleLeft;
+    var footLeft;
+
+    var subfolder = '/kinectdata/Kinect_Skeletal_Point_Data/rightArm/'; // initial or default
+    var kinectFilenames = [
+        'head.txt',
+        'shoulderCenter.txt',
+        'shoulderRight.txt',
+        'elbowRight.txt',
+        'wristRight.txt',
+        'handRight.txt',
+        'shoulderLeft.txt',
+        'elbowLeft.txt',
+        'wristLeft.txt',
+        'handLeft.txt',
+        'spine.txt',
+        'hipRight.txt',
+        'hipCenter.txt',
+        'hipLeft.txt',
+        'kneeRight.txt',
+        'ankleRight.txt',
+        'footRight.txt',
+        'kneeLeft.txt',
+        'ankleLeft.txt',
+        'footLeft.txt'];
+    var kinectNodes = [];
+    var lines = []; //Array of the lines connecting the skeletal nodes
+    var coords = []; // Array of arrays of coordinates
+    //Keys
+    ROT = 90;
+    ZOOM = 88;
+    PAN = 67;
+
+    var halt = false; //True stops the animation
+
+    //Material used for the lines
+    var lineMat = new THREE.LineBasicMaterial( { color: 0x21B4D1, linewidth: 10/*, vertexColors: true*/ } );
+
+    //Initializes the scene
+    function init() {
+        //Get canvas container
+        var canvas = document.getElementById("container");
+
+        //Create and start the renderer and add it to the canvas
+        renderer = new THREE.WebGLRenderer( {antialias: true} );
+        renderer.setSize(width, height);
+        renderer.shadowMapEnabled = true; //Turn on shadows
+        renderer.shadowMapSoft = true; //Anti-aliasing
+        canvas.appendChild(renderer.domElement);
+        
+        //Create camera and scene
+        scene = new THREE.Scene();
+        addCamera();
+
+        //Disable text cursor on the canvas
+        canvas.onselectstart = function() {
+            return false;
+        }
+
+        //Add stuff to the scene
+        addObjs(scene);
+        addLights(scene);
+        
+        //Draw it
+        renderer.setClearColorHex(0x000000, 1.0);
+        renderer.clear(); //Sets the background color
+        renderer.render(scene, camera);
+
+        //Load the text files containing coordinate data
+        loadCoords();
+        
+        //kickstart animation
+        animate(new Date().getTime());
+        //setInterval(animate, 1000 / FPS);
+    }
+
+    function loadCoords() {
+        coords = [];
+        for (j = 0; j < kinectFilenames.length; j++) {
+            jQuery.get(subfolder+"/"+kinectFilenames[j], function(data) {
+                var dataLines = data.split("\n");
+                var array = [];
+                for (i = 0; i < dataLines.length; i++) {
+                    array.push(dataLines[i].split(","));
+                }
+                coords.push(array);
+            });
+        }
+    }
+
+    //Puts the camera back at the starting position
+    function resetCam(e) {
+        if (e.keyCode == 32) { //Spacebar
+            scene.remove(camera);
+            addCamera();
+        }
+    }
+
+    function addCamera() {
+        camera = new THREE.PerspectiveCamera( view_angle, aspect, near, far );
+        scene.add(camera);
+        //Pull camera back from its original starting point of (0,0,0)
+        camera.position.set(100,0,-200);
+
+        //Controls to move the camera
+        camCntrl = new THREE.TrackballControls(camera, renderer.domElement);
+        camCntrl.keys = [ROT, ZOOM, PAN]; //rotate, zoom, pan
+
+        //Reset the camera when spacebar pressed
+        document.addEventListener("keydown", resetCam, false);
+    }
+
+    function addObjs() {
+        //Add all the skeletal nodes
+        head = addSphere(0, 100, 0);
+        shoulderCenter = addSphere(0, 85, 0);
+        shoulderRight = addSphere(-20, 75, 0);
+        elbowRight = addSphere(-40, 85, 0);
+        wristRight = addSphere(-60, 100, 0);
+        handRight = addSphere(-65, 115, 0);
+        shoulderLeft = addSphere(20, 75, 0);
+        elbowLeft = addSphere(40, 85, 0);
+        wristLeft = addSphere(60, 100, 0);
+        handLeft = addSphere(65, 115, 0);
+        spine = addSphere(0, 40, 0);
+        hipCenter = addSphere(0, 20, 0);
+        hipRight = addSphere(-15, 5, 0);
+        kneeRight = addSphere(-25, -40, 0);
+        ankleRight = addSphere(-35, -80, 0);
+        footRight = addSphere(-50, -90, 0);
+        hipLeft = addSphere(15, 5, 0);
+        kneeLeft = addSphere(25, -40, 0);
+        ankleLeft = addSphere(35, -80, 0);
+        footLeft = addSphere(50, -90, 0);
+
+        //Store all the nodes in an array
+        kinectNodes.push(head);
+        kinectNodes.push(shoulderCenter);
+        kinectNodes.push(shoulderRight);
+        kinectNodes.push(elbowRight);
+        kinectNodes.push(wristRight);
+        kinectNodes.push(handRight);
+        kinectNodes.push(shoulderLeft);
+        kinectNodes.push(elbowLeft);
+        kinectNodes.push(wristLeft);
+        kinectNodes.push(handLeft);
+        kinectNodes.push(spine);
+        kinectNodes.push(hipRight);
+        kinectNodes.push(hipCenter);
+        kinectNodes.push(hipLeft);
+        kinectNodes.push(kneeRight);
+        kinectNodes.push(ankleRight);
+        kinectNodes.push(footRight);
+        kinectNodes.push(kneeLeft);
+        kinectNodes.push(ankleLeft);
+        kinectNodes.push(footLeft);
+
+        //Add the lines between the nodes
+        addLine(head, shoulderCenter);
+        addLine(shoulderCenter, shoulderRight);
+        addLine(shoulderRight, elbowRight);
+        addLine(elbowRight, wristRight);
+        addLine(wristRight, handRight);
+        addLine(shoulderCenter, shoulderLeft);
+        addLine(shoulderLeft, elbowLeft);
+        addLine(elbowLeft, wristLeft);
+        addLine(wristLeft, handLeft);
+        addLine(shoulderCenter, spine);
+        addLine(spine, hipCenter);
+        addLine(hipRight, kneeRight);
+        addLine(hipCenter, hipRight);
+        addLine(kneeRight, ankleRight);
+        addLine(ankleRight, footRight);
+        addLine(hipCenter, hipLeft);
+        addLine(hipLeft, kneeLeft);
+        addLine(kneeLeft, ankleLeft);
+        addLine(ankleLeft, footLeft);
+    }
+
+    function addLights() {
+        /*//Create a point light and add it
+        var ptLight = new THREE.PointLight(0xFFFFFF);
+        ptLight.position.x = 10;
+        ptLight.position.y = 50;
+        ptLight.position.z = 100;
+        scene.add(ptLight);*/
+
+        //Create a spot light for shadows and add it
+        var spotLight = new THREE.SpotLight(0xFFFFFF);
+        spotLight.position.set(10,300,-400);
+        spotLight.castShadow = true;
+        //spotLight.shadowCameraVisible = true;
+        scene.add(spotLight);
+
+        //Directional light
+        var frontLight = new THREE.DirectionalLight(0x888888);
+        frontLight.position.set(300,900,-500);
+        frontLight.castShadow = true;
+        scene.add(frontLight);
+
+        //Ambient lighting
+        var ambLight = new THREE.AmbientLight(0x111111);
+        scene.add(ambLight);
+    }
+
+    function addSphere(x, y, z) {
+        var radius = 6;
+        var segments = 16;
+        var rings = 16;
+        var sphereMaterial = new THREE.MeshLambertMaterial(
+            {color: 0xC93D12}
+        );
+
+        var node;
+        node = new THREE.Mesh(
+            new THREE.SphereGeometry( radius, segments, rings ), //Geometry
+            sphereMaterial //Material
+        );
+        node.position.set(x,y,z);
+        node.castShadow = true;
+        node.receiveShadow = true;
+        scene.add(node);
+        return node;
+    }
+
+    function addLine(start, end) {
+        var lineGeo = new THREE.Geometry();
+        lineGeo.vertices.push( start.position );
+        lineGeo.vertices.push( end.position );
+        line = new THREE.Line( lineGeo, lineMat );
+        line.geometry.verticesNeedUpdate = true;
+        line.castShadow = true;
+        line.receiveShadow = true;
+
+        line._start = start;
+        line._end = end;
+
+        scene.add(line);
+        lines.push(line);
+    }
+
+    //Animation Loop
+    function animate(time) {
+        //Update kinect node locations
+        for (i = 0; i < kinectFilenames.length; i++) {
+            if (coords && coords[i]) {
+                var j = Math.floor((time/100)%coords[0].length);
+                if (coords[i][j]) {
+                    kinectNodes[i].position.x = coords[i][j][0]*100;
+                    kinectNodes[i].position.y = coords[i][j][1]*100;
+                    kinectNodes[i].position.z = coords[i][j][2]*100 - 150;
+                }
+            }
+        }
+
+        //Update kinect lines
+        for (i = 0; i < lines.length; i++) {
+            lines[i].geometry.vertices[0] = lines[i]._start.position;
+            lines[i].geometry.vertices[1] = lines[i]._end.position;
+            lines[i].geometry.verticesNeedUpdate = true;
+        }
+
+        camCntrl.update();
+        camera.lookAt(scene.position);
+        renderer.render(scene, camera);
+        if (!halt) {
+            window.requestAnimationFrame(animate, renderer.domElement);
+        }
+    }
+
+</script>
+
+<style type="text/css">
+    /*body {
+        background-color: #000;
+        color: #FFF;
+    }*/
+</style>
+</head>
+
+
+<body onLoad="init()">
+
+
+<div class="example">
+    <div id="filepick" class='demo'></div>
+</div>
+
+<div id="container"></div>
+
+<p>Click and drag to move camera. Hold <b>Z</b> to rotate, <b>X</b> to zoom, or <b>C</b> to pan.</p>
+
+</body>
+</html>
