@@ -1,123 +1,143 @@
 <html>
 <head>
 
-<script src="mrdoob-three.js-46c0a84\build\Three.js"></script>
-<script src="jquery-1.7.2.min.js"></script>
+<!-- <script src="mrdoob-three.js-46c0a84\build\Three.js"></script>
+<script src="jquery-1.7.2.min.js"></script> -->
 
-<link href="styles.css" rel="stylesheet" type="text/css" media="screen" />
+<!--<link href="styles.css" rel="stylesheet" type="text/css" media="screen" />-->
 
 <script type="text/javascript">
 //By Chris Lenk for UTC REU 2012
 
-    var camera;
-    var scene;
-    var renderer;
-    var camCntrl;
+    var ecgCamera;
+    var ecgScene;
+    var ecgCanvas;
+    var ecgRenderer;
+    var ecgCamCntrl;
     //Dimensions
-    var width = 800;
-    var height = 700;
+    var ecgWidth;// = 800;
+    var ecgHeight;// = 700;
     //Camera variables
-    var view_angle = 45;
-    var aspect = width / height;
-    var near = 0.1;
-    var far = 10000;
+    var ecgViewAngle = 45;
+    var ecgAspect;// = width / height;
+    var ecgNear = 0.1;
+    var ecgFar = 10000;
 
     var heart;
-    var clock = new THREE.Clock();
+    var ecgClock = new THREE.Clock();
 
     //Keys
-    ROT = 90;
-    ZOOM = 88;
-    PAN = 67;
+    ecgROT = 90;
+    ecgZOOM = 88;
+    ecgPAN = 67;
 
-    var folderpath = '/gait/';
-    var filename = 'sample1.txt';
+    ecgFPS = 12;
+    var ecgBLENDERSCALE = 15;
+    var ecgHalt = false; //True stops the animation
+    var ecgAnimOffset = 0; //Starting morphTarget in the animation
+    var ecgDuration = 1667; //in ms
+    var ecgKeyframes = 40;
+    var ecgInterpolation = ecgDuration / ecgKeyframes;
+    var ecgLastKeyframe = 0;
+    var ecgCurrentKeyframe = 0;
 
-    FPS = 12;
-    var BLENDERSCALE = 15;
-    var halt = false; //True stops the animation
-    var animOffset = 0; //Starting morphTarget in the animation
-    var duration = 1667; //in ms
-    var keyframes = 40;
-    var interpolation = duration / keyframes;
-    var lastKeyframe = 0;
-    var currentKeyframe = 0;
-
-    var humanAvgWalkSpeed = 1.3;
-    var steps = 0;
-    var dist = 0;
-    var speed = 1000;
+    var ecgSpeed = 1000;
 
     //Initializes the scene
-    function init() {
-        //Get canvas container
-        var canvas = document.getElementById("container");
+    function ecgInit() {
+        //Get canvas container3D
+        ecgCanvas = document.getElementById("ecgContainer3D");
 
         //Create and start the renderer and add it to the canvas
-        renderer = new THREE.WebGLRenderer( {antialias: true} );
-        renderer.setSize(width, height);
-        renderer.shadowMapEnabled = true; //Turn on shadows
-        renderer.shadowMapSoft = true; //Anti-aliasing
-        canvas.appendChild(renderer.domElement);
+        ecgRenderer = new THREE.WebGLRenderer( {antialias: true} );
+        ecgSetCanvasSize(); //renderer.setSize(width, height);
+        ecgRenderer.shadowMapEnabled = true; //Turn on shadows
+        ecgRenderer.shadowMapSoft = true; //Anti-aliasing
+        ecgCanvas.appendChild(ecgRenderer.domElement);
         
         //Create camera and scene
-        scene = new THREE.Scene();
-        addCamera();
+        ecgScene = new THREE.Scene();
+        ecgAddCamera();
 
         //Disable text cursor on the canvas
-        canvas.onselectstart = function() {
+        ecgCanvas.onselectstart = function() {
             return false;
         }
 
         //Add stuff to the scene
-        addObjs(scene);
-        addLights(scene);
-
-        //alert(speed);
-        //Load data from file
-        jQuery.get(folderpath+filename, function(data) {
-            var dataLines = data.split("\n");
-            //$('#numSteps').html(dataLines[0]);
-            //$('#distTraveled').html(dataLines[1] + " meters");
-            //$('#avgSpeed').html(dataLines[2] + " meters per second");
-            //speed = speed * dataLines[2] / humanAvgWalkSpeed;
-        });
+        ecgAddObjs(ecgScene);
+        ecgAddLights(ecgScene);
         
         //Draw it
-        renderer.setClearColorHex(0x000000, 1.0);
-        renderer.clear(); //Sets the background color
-        renderer.render(scene, camera);
+        ecgRenderer.setClearColorHex(0x000000, 1.0);
+        ecgRenderer.clear(); //Sets the background color
+        ecgRenderer.render(ecgScene, ecgCamera);
 
-        //Set up the keys to speed up/down the walking speed
-        document.addEventListener("keydown", speedAdjust, false);
+        //Set up keyboard listener
+        document.addEventListener("keydown", ecgHandleKey, false);
         
         //kickstart animation
-        animate();
+        ecgAnimate();
     }
 
-    //Puts the camera back at the starting position
-    function resetCam(e) {
-        if (e.keyCode == 32) { //Spacebar
-            scene.remove(camera);
-            addCamera();
+    //Updates the canvas size on window resize
+    //Uses solution from WestLangley: https://github.com/mrdoob/three.js/issues/1406#issuecomment-4207064
+    //And here: http://learningthreejs.com/data/THREEx/docs/THREEx.WindowResize.html
+    function ecgCanvasResize() {
+        if (ecgCanvas) {
+            ecgSetCanvasSize();
+            //Adjust the camera so objects look the same when resizing
+            ecgCamera.aspect = ecgWidth / ecgHeight;
+            ecgCamera.updateProjectionMatrix();
         }
     }
 
-    function addCamera() {
-        camera = new THREE.PerspectiveCamera( view_angle, aspect, near, far );
-        scene.add(camera);
-        //Pull camera back from its original starting point of (0,0,0)
-        camera.position.set(30,40,25); //try multiples of 6,8,5
-
-        //Controls to move the camera
-        camCntrl = new THREE.TrackballControls(camera, renderer.domElement);
-        camCntrl.keys = [ROT, ZOOM, PAN]; //rotate, zoom, pan
-
-        //Reset the camera when spacebar pressed
-        document.addEventListener("keydown", resetCam, false);
+    function ecgSetCanvasSize() {
+        ecgWidth = ecgCanvas.clientWidth;
+        ecgHeight = $(window).height() * visPanelFactor;
+        ecgRenderer.setSize(ecgWidth, ecgHeight);
     }
 
-    function addObjs() {
+    function ecgHandleKey(e) {
+        if (e.keyCode == 32) { //Spacebar
+            ecgResetCam();
+        } else if (e.keyCode == 38 && ecgSpeed < 5000) { //Up Arrow
+            ecgSpeed += 100; //Speed up
+        } else if (e.keyCode == 40 && ecgSpeed > 0) { //Down Arrow
+            ecgSpeed -= 100; //Slow down
+        } else if (e.keyCode == 49) { //Number 1 - sets camera to show left side
+            ecgResetCam();
+            ecgCamera.position.set(55,0,0);
+        } else if (e.keyCode == 50) { //Number 2 - sets camera to show front
+            ecgResetCam();
+            ecgCamera.position.set(0,0,55);
+        } else if (e.keyCode == 51) { //Number 3 - sets camera to show right side
+            ecgResetCam();
+            ecgCamera.position.set(-55,0,0);
+        } else if (e.keyCode == 52) { //Number 4 - sets camera to show back
+            ecgResetCam();
+            ecgCamera.position.set(0,0,-55);
+        }
+    }
+
+    //Puts the camera back at the starting position
+    function ecgResetCam() {
+        ecgScene.remove(ecgCamera);
+        ecgAddCamera();
+    }
+
+    function ecgAddCamera() {
+        ecgCamera = new THREE.PerspectiveCamera( ecgViewAngle, ecgAspect, ecgNear, ecgFar );
+        ecgScene.add(ecgCamera);
+        //Pull camera back from its original starting point of (0,0,0)
+        ecgCamera.position.set(30,40,25); //try multiples of 6,8,5
+
+        //Controls to move the camera
+        ecgCamCntrl = new THREE.TrackballControls(ecgCamera, ecgRenderer.domElement);
+        ecgCamCntrl.keys = [ecgROT, ecgZOOM, ecgPAN]; //rotate, zoom, pan
+    }
+
+    function ecgAddObjs() {
         var loader = new THREE.JSONLoader(true);
         loader.load ( 'Heart.js', function (geometry) {
             var material = new THREE.MeshLambertMaterial(
@@ -126,40 +146,40 @@
             material.morphTargets = true;
 
             heart = new THREE.MorphAnimMesh( geometry, material );
-            heart.scale.set(BLENDERSCALE, BLENDERSCALE, BLENDERSCALE);
+            heart.scale.set(ecgBLENDERSCALE, ecgBLENDERSCALE, ecgBLENDERSCALE);
             heart.overdraw = true;
             heart.castShadow = true;
             heart.receiveShadow = true;
-            scene.add(heart);
+            ecgScene.add(heart);
         } );
     }
 
-    function addLights() {
+    function ecgAddLights() {
         //Create a spot light for shadows and add it
         var spotLight = new THREE.SpotLight(0xFFFFFF);
         spotLight.position.set(300,300,400);
         spotLight.castShadow = true;
         //spotLight.shadowCameraVisible = true;
-        scene.add(spotLight);
+        ecgScene.add(spotLight);
 
         //Directional light
         var frontLight = new THREE.DirectionalLight(0x888888);
         frontLight.position.set(400,900,200);
         //frontLight.castShadow = true;
-        scene.add(frontLight);
+        ecgScene.add(frontLight);
 
         //Ambient lighting
         var ambLight = new THREE.AmbientLight(0x111111);
-        scene.add(ambLight);
+        ecgScene.add(ambLight);
     }
 
     //Animation Loop
-    function animate() {
-        var delta = clock.getDelta();
+    function ecgAnimate() {
+        var delta = ecgClock.getDelta();
 
         //Update heart to correct keyframe
         if (heart) {
-            heart.updateAnimation( speed * delta );
+            heart.updateAnimation( ecgSpeed * delta );
             //$('#distTraveled').html(heart.currentKeyframe);
             
             //Update number of steps taken
@@ -172,22 +192,20 @@
             }*/
         }
 
+        ecgCanvasResize();
+
         //Update the view
-        camCntrl.update();
-        camera.lookAt(scene.position);
-        renderer.render(scene, camera);
-        if (!halt) {
-            window.requestAnimationFrame(animate, renderer.domElement);
+        ecgCamCntrl.update();
+        ecgCamera.lookAt(ecgScene.position);
+        ecgRenderer.render(ecgScene, ecgCamera);
+        if (!ecgHalt) {
+            window.requestAnimationFrame(ecgAnimate, ecgRenderer.domElement);
         }
     }
 
-    function speedAdjust(e) {
-        if (e.keyCode == 38 && speed < 5000) { //Up Arrow
-            speed += 100;
-        } else if (e.keyCode == 40 && speed > 0) { //Down Arrow
-            speed -= 100;
-        }
-    }
+    $(document).ready(function() {
+      ecgInit();
+    });
 
 </script>
 
@@ -195,14 +213,14 @@
 </head>
 
 
-<body onLoad="init()">
+<body>
 
-<div id="overlay">
+<div id="ecgOverlay">
 </div>
 
-<div id="container"></div>
+<div id="ecgContainer3D" class="container3D"></div>
 
-<p>Click and drag to move camera. Hold <b>Z</b> to rotate, <b>X</b> to zoom, or <b>C</b> to pan.</p>
+<!--<p>Click and drag to move camera. Hold <b>Z</b> to rotate, <b>X</b> to zoom, or <b>C</b> to pan.</p>-->
 
 </body>
 </html>

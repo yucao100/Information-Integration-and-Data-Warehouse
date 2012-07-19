@@ -1,45 +1,31 @@
 <html>
 <head>
 
-<script src="mrdoob-three.js-46c0a84\build\Three.js"></script>
+<!-- <script src="mrdoob-three.js-46c0a84\build\Three.js"></script>
 <script src="jquery-1.7.2.min.js"></script>
 <script src="jqueryFileTree/jqueryFileTree.js"></script>
-<link href="jqueryFileTree/jqueryFileTree.css" rel="stylesheet" type="text/css" media="screen" />
+<link href="jqueryFileTree/jqueryFileTree.css" rel="stylesheet" type="text/css" media="screen" /> -->
 
 <script type="text/javascript">
 //By Chris Lenk for UTC REU 2012
 //Don't forget to set variable 'root' in the PHP connector script
 
-    $(document).ready( function() {
-        
-        $('#filepick').fileTree({ root: 'kinectdata/Kinect_Skeletal_Point_Data/', script: 'jqueryFileTree/connectors/jqueryFileTree.php', multiFolder: false }, function(file) { 
-
-                                    halt = true;
-                                    subfolder = file;
-                                    loadCoords();
-                                    halt = false;
-
-        }, true); //True to only show folders
-        
-    });
-</script>
-
-<script type="text/javascript">
-    var camera;
-    var scene;
-    var renderer;
-    var camCntrl;
+    var kinectCamera;
+    var kinectCanvas;
+    var kinectScene;
+    var kinectRenderer;
+    var kinectCamCntrl;
     //Dimensions
-    var width = 800;//window.innerWidth;
-    var height = 700;//window.innerHeight;
+    var kinectWidth;// = 800;//window.innerWidth;
+    var kinectHeight;// = 700;//window.innerHeight;
     //Camera variables
-    var view_angle = 45;
-    var aspect = width / height;
-    var near = 0.1;
-    var far = 10000;
-    FPS = 12;
+    var kinectViewAngle = 45;
+    var kinectAspect;// = width / height;
+    var kinectNear = 0.1;
+    var kinectFar = 10000;
+    kinectFPS = 12;
     //Skeletal nodes
-    var head;
+    var kinectHead;
     var shoulderCenter;
     var shoulderRight;
     var elbowRight;
@@ -60,7 +46,7 @@
     var ankleLeft;
     var footLeft;
 
-    var subfolder = '/kinectdata/Kinect_Skeletal_Point_Data/rightArm/'; // initial or default
+    var kinectSubfolder = '/kinectdata/Kinect_Skeletal_Point_Data/rightArm/'; // initial or default
     var kinectFilenames = [
         'head.txt',
         'shoulderCenter.txt',
@@ -83,117 +69,155 @@
         'ankleLeft.txt',
         'footLeft.txt'];
     var kinectNodes = [];
-    var lines = []; //Array of the lines connecting the skeletal nodes
-    var coords = []; // Array of arrays of coordinates
+    var kinectLines = []; //Array of the lines connecting the skeletal nodes
+    var kinectCoords = []; // Array of arrays of coordinates
     //Keys
-    ROT = 90;
-    ZOOM = 88;
-    PAN = 67;
+    kinectROT = 90;
+    kinectZOOM = 88;
+    kinectPAN = 67;
 
-    var halt = false; //True stops the animation
+    var kinectHalt = false; //True stops the animation
 
     //Material used for the lines
-    var lineMat = new THREE.LineBasicMaterial( { color: 0x21B4D1, linewidth: 10/*, vertexColors: true*/ } );
+    var kinectLineMat = new THREE.LineBasicMaterial( { color: 0x21B4D1, linewidth: 10/*, vertexColors: true*/ } );
 
     //Initializes the scene
-    function init() {
-        //Get canvas container
-        var canvas = document.getElementById("container");
+    function kinectInit() {
+        //Get canvas container3D
+        kinectCanvas = document.getElementById("kinectContainer3D");
 
         //Create and start the renderer and add it to the canvas
-        renderer = new THREE.WebGLRenderer( {antialias: true} );
-        renderer.setSize(width, height);
-        renderer.shadowMapEnabled = true; //Turn on shadows
-        renderer.shadowMapSoft = true; //Anti-aliasing
-        canvas.appendChild(renderer.domElement);
+        kinectRenderer = new THREE.WebGLRenderer( {antialias: true} );
+        kinectSetCanvasSize(); //kinectRenderer.setSize(kinectWidth, kinectHeight);
+        kinectRenderer.shadowMapEnabled = true; //Turn on shadows
+        kinectRenderer.shadowMapSoft = true; //Anti-aliasing
+        kinectCanvas.appendChild(kinectRenderer.domElement);
         
         //Create camera and scene
-        scene = new THREE.Scene();
-        addCamera();
+        kinectScene = new THREE.Scene();
+        kinectAddCamera();
 
         //Disable text cursor on the canvas
-        canvas.onselectstart = function() {
+        kinectCanvas.onselectstart = function() {
             return false;
         }
 
         //Add stuff to the scene
-        addObjs(scene);
-        addLights(scene);
+        kinectAddObjs(kinectScene);
+        kinectAddLights(kinectScene);
         
         //Draw it
-        renderer.setClearColorHex(0x000000, 1.0);
-        renderer.clear(); //Sets the background color
-        renderer.render(scene, camera);
+        kinectRenderer.setClearColorHex(0x000000, 1.0);
+        kinectRenderer.clear(); //Sets the background color
+        kinectRenderer.render(kinectScene, kinectCamera);
 
         //Load the text files containing coordinate data
-        loadCoords();
+        //loadCoords();
         
         //kickstart animation
-        animate(new Date().getTime());
+        kinectAnimate(new Date().getTime());
         //setInterval(animate, 1000 / FPS);
     }
 
-    function loadCoords() {
-        coords = [];
+    function kinectLoadCoords() {
+        kinectCoords = [];
         for (j = 0; j < kinectFilenames.length; j++) {
-            jQuery.get(subfolder+"/"+kinectFilenames[j], function(data) {
+            jQuery.get(subfolder+kinectFilenames[j], function(data) {
                 var dataLines = data.split("\n");
                 var array = [];
                 for (i = 0; i < dataLines.length; i++) {
                     array.push(dataLines[i].split(","));
                 }
-                coords.push(array);
+                kinectCoords.push(array);
             });
         }
     }
 
-    //Puts the camera back at the starting position
-    function resetCam(e) {
-        if (e.keyCode == 32) { //Spacebar
-            scene.remove(camera);
-            addCamera();
+    //Updates the canvas size on window resize
+    //Uses solution from WestLangley: https://github.com/mrdoob/three.js/issues/1406#issuecomment-4207064
+    //And here: http://learningthreejs.com/data/THREEx/docs/THREEx.WindowResize.html
+    function kinectCanvasResize() {
+        if (kinectCanvas) {
+            kinectSetCanvasSize();
+            //Adjust the camera so objects look the same when resizing
+            kinectCamera.aspect = kinectWidth / kinectHeight;
+            kinectCamera.updateProjectionMatrix();
         }
     }
 
-    function addCamera() {
-        camera = new THREE.PerspectiveCamera( view_angle, aspect, near, far );
-        scene.add(camera);
-        //Pull camera back from its original starting point of (0,0,0)
-        camera.position.set(100,0,-200);
-
-        //Controls to move the camera
-        camCntrl = new THREE.TrackballControls(camera, renderer.domElement);
-        camCntrl.keys = [ROT, ZOOM, PAN]; //rotate, zoom, pan
-
-        //Reset the camera when spacebar pressed
-        document.addEventListener("keydown", resetCam, false);
+    function kinectSetCanvasSize() {
+        kinectWidth = kinectCanvas.clientWidth;
+        kinectHeight = $(window).height() * visPanelFactor;
+        kinectRenderer.setSize(kinectWidth, kinectHeight);
     }
 
-    function addObjs() {
+    function kinectHandleKey(e) {
+        if (e.keyCode == 32) { //Spacebar
+            kinectResetCam();
+        } else if (e.keyCode == 38 && kinectSpeed < 5000) { //Up Arrow
+            kinectSpeed += 100; //Speed up
+        } else if (e.keyCode == 40 && kinectSpeed > 0) { //Down Arrow
+            kinectSpeed -= 100; //Slow down
+        } else if (e.keyCode == 49) { //Number 1 - sets camera to show left side
+            kinectResetCam();
+            kinectCamera.position.set(55,0,0);
+        } else if (e.keyCode == 50) { //Number 2 - sets camera to show front
+            kinectResetCam();
+            kinectCamera.position.set(0,0,55);
+        } else if (e.keyCode == 51) { //Number 3 - sets camera to show right side
+            kinectResetCam();
+            kinectCamera.position.set(-55,0,0);
+        } else if (e.keyCode == 52) { //Number 4 - sets camera to show back
+            kinectResetCam();
+            kinectCamera.position.set(0,0,-55);
+        }
+    }
+
+    //Puts the camera back at the starting position
+    function kinectResetCam(e) {
+        kinectScene.remove(kinectCamera);
+        kinectAddCamera();
+    }
+
+    function kinectAddCamera() {
+        kinectCamera = new THREE.PerspectiveCamera( kinectViewAngle, kinectAspect, kinectNear, kinectFar );
+        kinectScene.add(kinectCamera);
+        //Pull camera back from its original starting point of (0,0,0)
+        kinectCamera.position.set(0,0,-200);
+
+        //Controls to move the camera
+        kinectCamCntrl = new THREE.TrackballControls(kinectCamera, kinectRenderer.domElement);
+        kinectCamCntrl.keys = [kinectROT, kinectZOOM, kinectPAN]; //rotate, zoom, pan
+
+        //Keyboard listener
+        document.addEventListener("keydown", kinectHandleKey, false);
+    }
+
+    function kinectAddObjs() {
         //Add all the skeletal nodes
-        head = addSphere(0, 100, 0);
-        shoulderCenter = addSphere(0, 85, 0);
-        shoulderRight = addSphere(-20, 75, 0);
-        elbowRight = addSphere(-40, 85, 0);
-        wristRight = addSphere(-60, 100, 0);
-        handRight = addSphere(-65, 115, 0);
-        shoulderLeft = addSphere(20, 75, 0);
-        elbowLeft = addSphere(40, 85, 0);
-        wristLeft = addSphere(60, 100, 0);
-        handLeft = addSphere(65, 115, 0);
-        spine = addSphere(0, 40, 0);
-        hipCenter = addSphere(0, 20, 0);
-        hipRight = addSphere(-15, 5, 0);
-        kneeRight = addSphere(-25, -40, 0);
-        ankleRight = addSphere(-35, -80, 0);
-        footRight = addSphere(-50, -90, 0);
-        hipLeft = addSphere(15, 5, 0);
-        kneeLeft = addSphere(25, -40, 0);
-        ankleLeft = addSphere(35, -80, 0);
-        footLeft = addSphere(50, -90, 0);
+        kinectHead = kinectAddSphere(0, 90, 100);
+        shoulderCenter = kinectAddSphere(0, 75, 100);
+        shoulderRight = kinectAddSphere(-20, 65, 100);
+        elbowRight = kinectAddSphere(-40, 75, 100);
+        wristRight = kinectAddSphere(-60, 90, 100);
+        handRight = kinectAddSphere(-65, 105, 100);
+        shoulderLeft = kinectAddSphere(20, 65, 100);
+        elbowLeft = kinectAddSphere(40, 75, 100);
+        wristLeft = kinectAddSphere(60, 90, 100);
+        handLeft = kinectAddSphere(65, 105, 100);
+        spine = kinectAddSphere(0, 40, 90);
+        hipCenter = kinectAddSphere(0, 10, 100);
+        hipRight = kinectAddSphere(-15, -5, 100);
+        kneeRight = kinectAddSphere(-25, -50, 100);
+        ankleRight = kinectAddSphere(-35, -90, 100);
+        footRight = kinectAddSphere(-50, -100, 100);
+        hipLeft = kinectAddSphere(15, -5, 100);
+        kneeLeft = kinectAddSphere(25, -50, 100);
+        ankleLeft = kinectAddSphere(35, -90, 100);
+        footLeft = kinectAddSphere(50, -100, 100);
 
         //Store all the nodes in an array
-        kinectNodes.push(head);
+        kinectNodes.push(kinectHead);
         kinectNodes.push(shoulderCenter);
         kinectNodes.push(shoulderRight);
         kinectNodes.push(elbowRight);
@@ -215,28 +239,28 @@
         kinectNodes.push(footLeft);
 
         //Add the lines between the nodes
-        addLine(head, shoulderCenter);
-        addLine(shoulderCenter, shoulderRight);
-        addLine(shoulderRight, elbowRight);
-        addLine(elbowRight, wristRight);
-        addLine(wristRight, handRight);
-        addLine(shoulderCenter, shoulderLeft);
-        addLine(shoulderLeft, elbowLeft);
-        addLine(elbowLeft, wristLeft);
-        addLine(wristLeft, handLeft);
-        addLine(shoulderCenter, spine);
-        addLine(spine, hipCenter);
-        addLine(hipRight, kneeRight);
-        addLine(hipCenter, hipRight);
-        addLine(kneeRight, ankleRight);
-        addLine(ankleRight, footRight);
-        addLine(hipCenter, hipLeft);
-        addLine(hipLeft, kneeLeft);
-        addLine(kneeLeft, ankleLeft);
-        addLine(ankleLeft, footLeft);
+        kinectAddLine(kinectHead, shoulderCenter);
+        kinectAddLine(shoulderCenter, shoulderRight);
+        kinectAddLine(shoulderRight, elbowRight);
+        kinectAddLine(elbowRight, wristRight);
+        kinectAddLine(wristRight, handRight);
+        kinectAddLine(shoulderCenter, shoulderLeft);
+        kinectAddLine(shoulderLeft, elbowLeft);
+        kinectAddLine(elbowLeft, wristLeft);
+        kinectAddLine(wristLeft, handLeft);
+        kinectAddLine(shoulderCenter, spine);
+        kinectAddLine(spine, hipCenter);
+        kinectAddLine(hipRight, kneeRight);
+        kinectAddLine(hipCenter, hipRight);
+        kinectAddLine(kneeRight, ankleRight);
+        kinectAddLine(ankleRight, footRight);
+        kinectAddLine(hipCenter, hipLeft);
+        kinectAddLine(hipLeft, kneeLeft);
+        kinectAddLine(kneeLeft, ankleLeft);
+        kinectAddLine(ankleLeft, footLeft);
     }
 
-    function addLights() {
+    function kinectAddLights() {
         /*//Create a point light and add it
         var ptLight = new THREE.PointLight(0xFFFFFF);
         ptLight.position.x = 10;
@@ -249,20 +273,20 @@
         spotLight.position.set(10,300,-400);
         spotLight.castShadow = true;
         //spotLight.shadowCameraVisible = true;
-        scene.add(spotLight);
+        kinectScene.add(spotLight);
 
         //Directional light
         var frontLight = new THREE.DirectionalLight(0x888888);
         frontLight.position.set(300,900,-500);
         frontLight.castShadow = true;
-        scene.add(frontLight);
+        kinectScene.add(frontLight);
 
         //Ambient lighting
         var ambLight = new THREE.AmbientLight(0x111111);
-        scene.add(ambLight);
+        kinectScene.add(ambLight);
     }
 
-    function addSphere(x, y, z) {
+    function kinectAddSphere(x, y, z) {
         var radius = 6;
         var segments = 16;
         var rings = 16;
@@ -278,15 +302,15 @@
         node.position.set(x,y,z);
         node.castShadow = true;
         node.receiveShadow = true;
-        scene.add(node);
+        kinectScene.add(node);
         return node;
     }
 
-    function addLine(start, end) {
+    function kinectAddLine(start, end) {
         var lineGeo = new THREE.Geometry();
         lineGeo.vertices.push( start.position );
         lineGeo.vertices.push( end.position );
-        line = new THREE.Line( lineGeo, lineMat );
+        line = new THREE.Line( lineGeo, kinectLineMat );
         line.geometry.verticesNeedUpdate = true;
         line.castShadow = true;
         line.receiveShadow = true;
@@ -294,38 +318,57 @@
         line._start = start;
         line._end = end;
 
-        scene.add(line);
-        lines.push(line);
+        kinectScene.add(line);
+        kinectLines.push(line);
     }
 
     //Animation Loop
-    function animate(time) {
+    function kinectAnimate(time) {
         //Update kinect node locations
         for (i = 0; i < kinectFilenames.length; i++) {
-            if (coords && coords[i]) {
-                var j = Math.floor((time/100)%coords[0].length);
-                if (coords[i][j]) {
-                    kinectNodes[i].position.x = coords[i][j][0]*100;
-                    kinectNodes[i].position.y = coords[i][j][1]*100;
-                    kinectNodes[i].position.z = coords[i][j][2]*100 - 150;
+            if (kinectCoords && kinectCoords[i]) {
+                var j = Math.floor((time/100)%kinectCoords[0].length);
+                if (kinectCoords[i][j]) {
+                    kinectNodes[i].position.x = kinectCoords[i][j][0]*100;
+                    kinectNodes[i].position.y = kinectCoords[i][j][1]*100;
+                    kinectNodes[i].position.z = kinectCoords[i][j][2]*100 - 150;
                 }
             }
         }
 
         //Update kinect lines
-        for (i = 0; i < lines.length; i++) {
-            lines[i].geometry.vertices[0] = lines[i]._start.position;
-            lines[i].geometry.vertices[1] = lines[i]._end.position;
-            lines[i].geometry.verticesNeedUpdate = true;
+        for (i = 0; i < kinectLines.length; i++) {
+            kinectLines[i].geometry.vertices[0] = kinectLines[i]._start.position;
+            kinectLines[i].geometry.vertices[1] = kinectLines[i]._end.position;
+            kinectLines[i].geometry.verticesNeedUpdate = true;
         }
 
-        camCntrl.update();
-        camera.lookAt(scene.position);
-        renderer.render(scene, camera);
-        if (!halt) {
-            window.requestAnimationFrame(animate, renderer.domElement);
+        kinectCanvasResize();
+
+        kinectCamCntrl.update();
+        kinectCamera.lookAt(kinectScene.position);
+        kinectRenderer.render(kinectScene, kinectCamera);
+        if (!kinectHalt) {
+            window.requestAnimationFrame(kinectAnimate, kinectRenderer.domElement);
         }
     }
+
+    $(document).ready( function() {
+
+        var location = window.location.pathname;
+        var path = location.substring(1, location.lastIndexOf('/')+1);
+        
+        $('#filepick').fileTree({ root: 'kinectdata/Kinect_Skeletal_Point_Data/', script: 'jqueryFileTree/connectors/jqueryFileTree.php', multiFolder: false }, function(file) { 
+
+                kinectHalt = true;
+                kinectSubfolder = file;
+                kinectLoadCoords();
+                kinectHalt = false;
+
+        }, true, path); //True to only show folders
+        
+        kinectInit();
+    });
 
 </script>
 
@@ -338,16 +381,15 @@
 </head>
 
 
-<body onLoad="init()">
+<body>
 
-
-<div class="example">
+<!-- <div class="example">
     <div id="filepick" class='demo'></div>
-</div>
+</div> -->
 
-<div id="container"></div>
+<div id="kinectContainer3D" class="container3D"></div>
 
-<p>Click and drag to move camera. Hold <b>Z</b> to rotate, <b>X</b> to zoom, or <b>C</b> to pan.</p>
+<!--<p>Click and drag to move camera. Hold <b>Z</b> to rotate, <b>X</b> to zoom, or <b>C</b> to pan.</p>-->
 
 </body>
 </html>

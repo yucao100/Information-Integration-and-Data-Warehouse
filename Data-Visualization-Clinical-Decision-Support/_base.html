@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8" />
+	<title>Data Visualization for Clinical Decision Support - UTC REU 2012</title>
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	
+	<!-- 1140px Grid styles for IE -->
+	<!--[if lte IE 9]><link rel="stylesheet" href="1140_CssGrid_2/css/ie.css" type="text/css" media="screen" /><![endif]-->
+
+	<!-- The 1140px Grid - http://cssgrid.net/ -->
+	<link rel="stylesheet" href="1140_CssGrid_2/css/1140.css" type="text/css" media="screen" />
+	
+	<!-- Your styles -->
+	<link rel="stylesheet" href="1140_CssGrid_2/css/styles.css" type="text/css" media="screen" />
+	
+	<!--css3-mediaqueries-js - http://code.google.com/p/css3-mediaqueries-js/ - Enables media queries in some unsupported browsers-->
+	<script type="text/javascript" src="1140_CssGrid_2/js/css3-mediaqueries.js"></script>
+	
+	<!--Delete embedded styles, just for example.-->
+	<style type="text/css">
+	
+	body {
+	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	}
+	
+	.container h1,
+	.container p {
+		color: #fff;
+		/*line-height: 100px;*/
+		background: #000;
+		text-align: center;
+		margin: 10px 0 0 0;
+		padding: 5px;
+	}
+
+	.container .container3D {
+		margin: 10px 0 0 0;
+		/*height: 500px;
+		height: 50%;
+		max-height: 500px;*/
+	}
+
+	#timeline {
+		position: fixed;
+		bottom: 5px;
+		right:0;
+		left:0;
+		/*padding: 0px;*/
+		margin: 0px;
+		/*width: 100%;*/
+	}
+	
+	.row {
+		/*min-height: 1px;*/
+	}
+
+	.bottom {
+		margin-bottom: 50px;
+	}
+
+	.body {
+		/*height: 100%;*/
+	}
+
+	</style>
+
+<script src="mrdoob-three.js-46c0a84\build\Three.js"></script>
+<script src="jquery-1.7.2.min.js"></script>
+<script src="rainbowvis.js"></script>
+<script src="jqueryFileTree/jqueryFileTree.js"></script>
+
+<link href="jqueryFileTree/jqueryFileTree.css" rel="stylesheet" type="text/css" media="screen" />
+<link href="styles.css" rel="stylesheet" type="text/css" media="screen" />
+
+	<script type="text/javascript">
+		//Scale factor for size of visualization panels
+		visPanelFactor = 0.4;
+
+		//Load the visualization panels
+	    $(document).ready( function() {
+	        $.get("kinect.html", {}, function(pgData){
+	        	$("#kinect").html(pgData);
+	        });
+	        $.get("ecg.html", {}, function(pgData){
+	        	$("#ecg").html(pgData);
+	        });
+	        $.get("eeg.html", {}, function(pgData){
+	        	$("#eeg").html(pgData);
+	        });
+	        $.get("gait.html", {}, function(pgData){
+	        	$("#gait").html(pgData);
+	        });
+	        $.get("fall.html", {}, function(pgData){
+	        	$("#fall").html(pgData);
+	        });
+	    });
+	</script>
+
+</head>
+
+
+<body>
+
+<div class="container">
+	<div class="row">
+		<div class="twelvecol last">
+			<h1>Header</h1>
+		</div>
+	</div>
+</div>
+
+<div class="container">
+	<div class="row">
+		<div class="fourcol" id="kinect">
+			<p>Four columns</p>
+		</div>
+		<div class="fourcol" id="ecg">
+			<p>Four columns</p>
+		</div>
+		<div class="fourcol last" id="eeg">
+			<p>Four columns</p>
+		</div>
+	</div>
+</div>
+
+<div class="container bottom">
+	<div class="row">
+		<div class="fourcol" id="fall">
+			<p>Four columns</p>
+		</div>
+		<div class="fourcol" id="gait">
+			<p>Four columns</p>
+		</div>
+		<div class="fourcol last">
+			<p>Click and drag to move camera. Hold <b>Z</b> to rotate, <b>X</b> to zoom, or <b>C</b> to pan.<br/>
+			Press <b>1</b> for left view, <b>2</b> for front view, <b>3</b> for right view, or <b>4</b> for back view.<br/>
+			Press <b>Spacebar</b> to revert to the original camera position.</p>
+
+			<p>Uses the Lee Perry-Smith head found <a href="http://www.ir-ltd.net/infinite-3d-head-scan-released/">here</a>.</p>
+		</div>
+	</div>
+</div>
+
+<div class="container" id="timeline">
+	<div class="row">
+		<!--<div class="twelvecol last">-->
+			<p>Footer</p>
+		<!--</div>-->
+	</div>
+</div>
+
+
+</body>
+
+</html>

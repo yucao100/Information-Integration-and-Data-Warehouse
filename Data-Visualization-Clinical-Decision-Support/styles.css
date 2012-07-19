@@ -1,12 +1,15 @@
-#overlay {
+.overlay {
 	position: absolute;
+	margin-top: 15px;
+	margin-left: 10px;
 	color: #FFF;
-	margin-left: 250px;
+	/*margin-left: 250px;*/
+	text-align: center;
 }
 
-.container {
-	display: inline-block;
-	width: 48%;
-	min-height: 1px;
-	height: 30%;
+.container3D {
+	/*display: inline-block;
+	min-height: 1px;*/
+	height: 100%;
+	width: 100%;
 }

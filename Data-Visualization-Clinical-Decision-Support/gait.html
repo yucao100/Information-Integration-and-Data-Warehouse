@@ -1,0 +1,246 @@
+<html>
+<head>
+
+<!-- <script src="mrdoob-three.js-46c0a84\build\Three.js"></script>
+<script src="jquery-1.7.2.min.js"></script> 
+
+<link href="styles.css" rel="stylesheet" type="text/css" media="screen" />-->
+
+<script type="text/javascript">
+//By Chris Lenk for UTC REU 2012
+
+    var gaitCamera;
+    var gaitCanvas;
+    var gaitScene;
+    var gaitRenderer;
+    var gaitCamCntrl;
+    //Dimensions
+    var gaitWidth;// = 800;
+    var gaitHeight;// = 700;
+    //Camera variables
+    var gaitViewAngle = 45;
+    var gaitAspect;// = width / height;
+    var gaitNear = 0.1;
+    var gaitFar = 10000;
+
+    var gaitPerson;
+    var gaitClock = new THREE.Clock();
+
+    //Keys
+    gaitROT = 90;
+    gaitZOOM = 88;
+    gaitPAN = 67;
+
+    var gaitFolderpath = '/Data-Visualization-Clinical-Decision-Support/gait/';
+    var gaitFilename = 'sample1.txt';
+
+    gaitFPS = 12;
+    var gaitBLENDERSCALE = 15;
+    var gaitHalt = false; //True stops the animation
+    var gaitAnimOffset = 0; //Starting morphTarget in the animation
+    var gaitDuration = 1667; //in ms
+    var gaitKeyframes = 40;
+    var gaitInterpolation = gaitDuration / gaitKeyframes;
+    var gaitLastKeyframe = 0;
+    var gaitCurrentKeyframe = 0;
+
+    var gaitHumanAvgWalkSpeed = 1.3;
+    var gaitSteps = 0;
+    var gaitDist = 0;
+    var gaitSpeed = 1000;
+
+    //Initializes the scene
+    function gaitInit() {
+        //Get canvas container3D
+        gaitCanvas = document.getElementById("gaitContainer3D");
+
+        //Create and start the renderer and add it to the canvas
+        gaitRenderer = new THREE.WebGLRenderer( {antialias: true} );
+        gaitSetCanvasSize(); //renderer.setSize(width, height);
+        gaitRenderer.shadowMapEnabled = true; //Turn on shadows
+        gaitRenderer.shadowMapSoft = true; //Anti-aliasing
+        gaitCanvas.appendChild(gaitRenderer.domElement);
+        
+        //Create camera and scene
+        gaitScene = new THREE.Scene();
+        gaitAddCamera();
+
+        //Disable text cursor on the canvas
+        gaitCanvas.onselectstart = function() {
+            return false;
+        }
+
+        //Add stuff to the scene
+        gaitAddObjs(gaitScene);
+        gaitAddLights(gaitScene);
+
+        //alert(speed);
+        //Load data from file
+        jQuery.get(gaitFolderpath+gaitFilename, function(data) {
+            var dataLines = data.split("\n");
+            $('#numSteps').html(dataLines[0]);
+            $('#distTraveled').html(dataLines[1] + " meters");
+            $('#avgSpeed').html(dataLines[2] + " meters per second");
+            gaitSpeed = gaitSpeed * dataLines[2] / gaitHumanAvgWalkSpeed;
+        });
+        
+        //Draw it
+        gaitRenderer.setClearColorHex(0x000000, 1.0);
+        gaitRenderer.clear(); //Sets the background color
+        gaitRenderer.render(gaitScene, gaitCamera);
+
+        //Set up keyboard listener
+        document.addEventListener("keydown", gaitHandleKey, false);
+        
+        //kickstart animation
+        gaitAnimate();
+    }
+
+    //Updates the canvas size on window resize
+    //Uses solution from WestLangley: https://github.com/mrdoob/three.js/issues/1406#issuecomment-4207064
+    //And here: http://learningthreejs.com/data/THREEx/docs/THREEx.WindowResize.html
+    function gaitCanvasResize() {
+        if (gaitCanvas) {
+            gaitSetCanvasSize();
+            //Adjust the camera so objects look the same when resizing
+            gaitCamera.aspect = gaitWidth / gaitHeight;
+            gaitCamera.updateProjectionMatrix();
+        }
+    }
+
+    function gaitSetCanvasSize() {
+        gaitWidth = gaitCanvas.clientWidth;
+        gaitHeight = $(window).height() * visPanelFactor;
+        gaitRenderer.setSize(gaitWidth, gaitHeight);
+    }
+
+    function gaitHandleKey(e) {
+        if (e.keyCode == 32) { //Spacebar
+            gaitResetCam();
+        } else if (e.keyCode == 38 && gaitSpeed < 5000) { //Up Arrow
+            gaitSpeed += 100; //Speed up
+        } else if (e.keyCode == 40 && gaitSpeed > 0) { //Down Arrow
+            gaitSpeed -= 100; //Slow down
+        } else if (e.keyCode == 49) { //Number 1 - sets camera to show left side
+            gaitResetCam();
+            gaitCamera.position.set(55,0,0);
+        } else if (e.keyCode == 50) { //Number 2 - sets camera to show front
+            gaitResetCam();
+            gaitCamera.position.set(0,0,55);
+        } else if (e.keyCode == 51) { //Number 3 - sets camera to show right side
+            gaitResetCam();
+            gaitCamera.position.set(-55,0,0);
+        } else if (e.keyCode == 52) { //Number 4 - sets camera to show back
+            gaitResetCam();
+            gaitCamera.position.set(0,0,-55);
+        }
+    }
+
+    //Puts the camera back at the starting position
+    function gaitResetCam(e) {
+        gaitScene.remove(gaitCamera);
+        gaitAddCamera();
+    }
+
+    function gaitAddCamera() {
+        gaitCamera = new THREE.PerspectiveCamera( gaitViewAngle, gaitAspect, gaitNear, gaitFar );
+        gaitScene.add(gaitCamera);
+        //Pull camera back from its original starting point of (0,0,0)
+        gaitCamera.position.set(100,0,200);
+
+        //Controls to move the camera
+        gaitCamCntrl = new THREE.TrackballControls(gaitCamera, gaitRenderer.domElement);
+        gaitCamCntrl.keys = [gaitROT, gaitZOOM, gaitPAN]; //rotate, zoom, pan
+
+        //Reset the camera when spacebar pressed
+        document.addEventListener("keydown", gaitResetCam, false);
+    }
+
+    function gaitAddObjs() {
+        var loader = new THREE.JSONLoader(true);
+        loader.load ( 'PersonAnimTest.js', function (geometry) {
+            var material = geometry.materials[ 0 ];
+            material.morphTargets = true;
+
+            gaitPerson = new THREE.MorphAnimMesh( geometry, new THREE.MeshFaceMaterial() );
+            gaitPerson.scale.set(gaitBLENDERSCALE, gaitBLENDERSCALE, gaitBLENDERSCALE);
+            gaitPerson.overdraw = true;
+            gaitPerson.castShadow = true;
+            gaitPerson.receiveShadow = true;
+            gaitScene.add(gaitPerson);
+        } );
+    }
+
+    function gaitAddLights() {
+        //Create a spot light for shadows and add it
+        var spotLight = new THREE.SpotLight(0xFFFFFF);
+        spotLight.position.set(300,300,400);
+        spotLight.castShadow = true;
+        //spotLight.shadowCameraVisible = true;
+        gaitScene.add(spotLight);
+
+        //Directional light
+        var frontLight = new THREE.DirectionalLight(0x888888);
+        frontLight.position.set(400,900,200);
+        //frontLight.castShadow = true;
+        gaitScene.add(frontLight);
+
+        //Ambient lighting
+        var ambLight = new THREE.AmbientLight(0x111111);
+        gaitScene.add(ambLight);
+    }
+
+    //Animation Loop
+    function gaitAnimate() {
+        var delta = gaitClock.getDelta();
+
+        //Update gaitPerson to correct keyframe
+        if (gaitPerson) {
+            gaitPerson.updateAnimation( gaitSpeed * delta );
+            //$('#distTraveled').html(gaitPerson.currentKeyframe);
+            
+            //Update number of steps taken
+                    /*Need to know on which keyframes the model makes a footstep
+                    Keyframes in Three.js start from 0 but in Blender from 1*/
+            //Assume the footsteps are on the first frame and the middle frame (first one foot and then the other)
+            /*if (gaitPerson.currentKeyframe == 0 || gaitPerson.currentKeyframe == (gaitPerson.length / 2) - 1) {
+                steps++;
+                $('#numSteps').html(steps);
+            }*/
+        }
+
+        gaitCanvasResize();
+
+        //Update the view
+        gaitCamCntrl.update();
+        gaitCamera.lookAt(gaitScene.position);
+        gaitRenderer.render(gaitScene, gaitCamera);
+        if (!gaitHalt) {
+            window.requestAnimationFrame(gaitAnimate, gaitRenderer.domElement);
+        }
+    }
+
+    $(document).ready(function() {
+      gaitInit();
+    });
+
+</script>
+
+
+</head>
+
+
+<body>
+
+<div class="overlay">
+    Number of steps: <span id="gaitNumSteps">0</span><br />
+    Distance traveled: <span id="gaitDistTraveled">0</span><br />
+    Average Speed: <span id="gaitAvgSpeed">0</span>
+</div>
+
+<div id="gaitContainer3D" class="container3D"></div>
+
+<!-- <p>Click and drag to move camera. Hold <b>Z</b> to rotate, <b>X</b> to zoom, or <b>C</b> to pan.</p> -->
+
+</body>
+</html>
