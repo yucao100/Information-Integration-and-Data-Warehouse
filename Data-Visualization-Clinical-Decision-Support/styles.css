@@ -1,15 +1,36 @@
 .overlay {
 	position: absolute;
 	margin-top: 15px;
-	margin-left: 10px;
 	color: #FFF;
-	/*margin-left: 250px;*/
 	text-align: center;
 }
 
+.overlayText { /* For putting text on a visualization panel */
+	margin-left: 40px;
+}
+
+.overlayCamera { /* For camera buttons on a visualization panel */
+	margin-left: 10px;
+	width: 23px;
+}
+
+.overlayZoom { /* For zoom button on a visualization panel */
+	/*margin-left: 10px;*/
+	/*float: right;*/
+	/*position: relative;*/
+	/*right: 0px;*/
+	/*margin-right: 0px;*/
+	/*margin-left: 85%;*/
+}
+
 .container3D {
-	/*display: inline-block;
-	min-height: 1px;*/
+	/*display: inline-block;*/
+	/*min-height: 200px;*/
 	height: 100%;
+	width: 100%;
+}
+
+.container3D canvas {
+	min-height: 233px;
 	width: 100%;
 }

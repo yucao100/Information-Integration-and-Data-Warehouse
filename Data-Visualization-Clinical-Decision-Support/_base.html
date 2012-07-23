@@ -26,7 +26,14 @@
 	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 	}
 	
-	.container h1,
+	.container h1 {
+		color: #fff;
+		background: #000;
+		margin: 10px 0 0 0;
+		padding: 5px 5px 5px 25px;
+		font-size: 1.15em;
+	}
+
 	.container p {
 		color: #fff;
 		/*line-height: 100px;*/
@@ -52,17 +59,26 @@
 		margin: 0px;
 		/*width: 100%;*/
 	}
+
+	#timeline p {
+		padding-left: 10px;
+		padding-right: 10px;
+	}
 	
 	.row {
 		/*min-height: 1px;*/
 	}
 
 	.bottom {
-		margin-bottom: 50px;
+		margin-bottom: 80px;
 	}
 
 	.body {
 		/*height: 100%;*/
+	}
+
+	input[type="range"] {
+		width: 100%;
 	}
 
 	</style>
@@ -71,17 +87,24 @@
 <script src="jquery-1.7.2.min.js"></script>
 <script src="rainbowvis.js"></script>
 <script src="jqueryFileTree/jqueryFileTree.js"></script>
+<script src="freqdec-fd-slider-4cd0633/js/fd-slider.js"></script>
+<script src="TrackballControlsCustom.js"></script>
 
 <link href="jqueryFileTree/jqueryFileTree.css" rel="stylesheet" type="text/css" media="screen" />
 <link href="styles.css" rel="stylesheet" type="text/css" media="screen" />
+<link href="freqdec-fd-slider-4cd0633/css/fd-slider.css" rel="stylesheet" type="text/css" media="screen" />
 
 	<script type="text/javascript">
+    	var globalClock = new THREE.Clock(); //Main clock to sync all visualizations to
+    	var pause = false;
+    	var storedTime; //For pausing
+
 		//Scale factor for size of visualization panels
 		visPanelFactor = 0.4;
 
 		//Load the visualization panels
 	    $(document).ready( function() {
-	        $.get("kinect.html", {}, function(pgData){
+	        /*$.get("kinect.html", {}, function(pgData){
 	        	$("#kinect").html(pgData);
 	        });
 	        $.get("ecg.html", {}, function(pgData){
@@ -92,11 +115,44 @@
 	        });
 	        $.get("gait.html", {}, function(pgData){
 	        	$("#gait").html(pgData);
-	        });
+	        });*/
 	        $.get("fall.html", {}, function(pgData){
 	        	$("#fall").html(pgData);
 	        });
+
+		    //Kickstart timeline
+		    advanceTime();
 	    });
+
+	    function advanceTime() {
+        	//Move the slider 1 step
+        	if (!pause) {
+        		var time = globalClock.getElapsedTime();
+	        	$("#timelineForm").val(time *5 ); //only to speed up for demonstration purposes
+	        	fdSlider.updateSlider('timelineForm');        		
+        	}
+
+        	//Reset slider when it gets to the end
+        	if ($("#timelineForm").val() >= 100.0) {
+        		$("#timelineForm").val("0.0");
+        		fdSlider.updateSlider('timelineForm');
+        		globalClock = new THREE.Clock(); //Reset the clock
+        	}
+
+        	//Continue animation
+        	window.requestAnimationFrame(advanceTime);
+	    }
+
+	    //Toggle timeline auto-advancing
+	    function toggleTime() {
+	    	if (pause) {
+	    		globalClock.start();
+	    	} else {
+	    		globalClock.stop();
+	    	}
+	    	pause = !pause;
+	    }
+
 	</script>
 
 </head>
@@ -107,7 +163,7 @@
 <div class="container">
 	<div class="row">
 		<div class="twelvecol last">
-			<h1>Header</h1>
+			<h1>Data Visualization for Clinical Decision Support</h1>
 		</div>
 	</div>
 </div>
@@ -147,7 +203,31 @@
 <div class="container" id="timeline">
 	<div class="row">
 		<!--<div class="twelvecol last">-->
-			<p>Footer</p>
+		<p>
+			<img src="icons/pause.png" id="pause">
+       		<script>
+				$('#pause').click( function() {
+					toggleTime();
+				});
+			 </script>
+       		<!-- <input name="html5shim-1" id="html5shim-1" type="range" min="0" max="100" step="0.20" title="Timeline" value="0.0" /> -->
+       		<input type="text" name="timelineForm" id="timelineForm" value="0" />
+       		<script>
+				fdSlider.createSlider({
+				  // Associate the slider with the form element 
+				  inp:document.getElementById("timelineForm"),
+				  // A minimum value of 5
+				  min:0,
+				  // A maximum value of 15
+				  max:100,
+				  // A step/increment of 0.2
+				  step:.2,
+				  // Hide the input box
+				  hideInput:true
+				});
+			 </script>
+       	</p>
+
 		<!--</div>-->
 	</div>
 </div>

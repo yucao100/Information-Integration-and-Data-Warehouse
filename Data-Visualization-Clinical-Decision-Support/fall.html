@@ -100,6 +100,9 @@
     function fallSetCanvasSize() {
         fallWidth = fallCanvas.clientWidth;
         fallHeight = $(window).height() * visPanelFactor;
+        if (fallHeight < 210) { //min-height equivalent
+            fallHeight = 210
+        }
         fallRenderer.setSize(fallWidth, fallHeight);
     }
 
@@ -300,9 +303,51 @@
 
 <body>
 
-<div class="overlay">
+<div class="overlay overlayText">
     Activity: <span id="fallActivity">0</span>
 </div>
+
+<div class="overlay overlayCamera">
+    <img src="icons/front.png" id="frontCamBtn">
+    <img src="icons/left.png" id="leftCamBtn">
+    <img src="icons/right.png" id="rightCamBtn">
+    <img src="icons/back.png" id="backCamBtn">
+    <img src="icons/reset.png" id="resetCamBtn">
+    <img src="icons/full.png" id="fullBtn">
+    <img src="icons/zoomIn.png" id="zoomInBtn">
+    <img src="icons/ZoomOut.png" id="zoomOutBtn">
+</div>
+
+<script type="text/javascript">
+    $('#frontCamBtn').click( function() { //Sets camera to show front
+        fallResetCam();
+        fallCamera.position.set(0,0,55);
+    });
+    $('#leftCamBtn').click( function() { //Sets camera to show left side
+        fallResetCam();
+        fallCamera.position.set(55,0,0);
+    });
+    $('#rightCamBtn').click( function() { //Sets camera to show right side
+        fallResetCam();
+        fallCamera.position.set(-55,0,0);
+    });
+    $('#backCamBtn').click( function() { //Sets camera to show back
+        fallResetCam();
+        fallCamera.position.set(0,0,-55);
+    });
+    $('#resetCamBtn').click( function() { //Set camera back to default position
+        fallResetCam();
+    });
+    $('#fullBtn').click( function() { //Maximize this panel
+        
+    });
+    $('#zoomInBtn').click( function() { //Zoom in
+
+    });
+    $('#zoomOutBtn').click( function() { //Zoom out
+        
+    });
+</script>
 
 <!-- <div class="example">
     <div id="filepick" class='demo'></div>
