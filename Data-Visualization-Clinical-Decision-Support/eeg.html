@@ -310,7 +310,7 @@
 
         for (i = 0; i < eegFilenames.length; i++) {
             if (eegVals && eegVals[i]) {
-                var j = Math.floor((time*animMultiplier)%eegVals.length); // Adjust the time multiplier to speed up/slow down animation
+                var j = Math.floor($("#timelineForm").val() % eegVals.length);
                 if (eegVals[i][j]) {
                     eegNodes[i].material.color = new THREE.Color( '0x' + eegGradient.colourAt( eegVals[i][j] ) );
                 }

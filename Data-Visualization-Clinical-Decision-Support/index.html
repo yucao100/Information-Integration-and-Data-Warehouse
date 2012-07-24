@@ -111,7 +111,7 @@
     	var globalClock = new THREE.Clock(); //Main clock to sync all visualizations to
     	var pause = false;
     	var storedTime; //For pausing
-    	animMultiplier = 5;
+    	animMultiplier = 10; // Adjust to speed up/slow down animation
 		var dataLength = 100;
 
 		//Scale factor for size of visualization panels
@@ -176,16 +176,11 @@
 	    });
 
 		function replaceTimeline() {
-
-	            		//Replace the timeline slider with one having an appropriate length for the new data
-	            		//if (heartrates) alert(heartrates);
-	            		dataLength = heartrates.length;
-	            		fdSlider.destroySlider('timelineForm');
-	            		$('.fd-slider').remove();
-	            		//alert(dataLength);
-	            		//$().html('');
-	            		//<input type="text" name="timelineForm" id="timelineForm" value="0" />
-						createSlider();
+    		//Replace the timeline slider with one having an appropriate length for the new data
+    		dataLength = heartrates.length;
+    		fdSlider.destroySlider('timelineForm');
+    		$('.fd-slider').remove();
+			createSlider();
 		}
 
 	    function advanceTime() {
@@ -193,11 +188,11 @@
         	if (!pause) {
         		var time = globalClock.getElapsedTime();
 	        	$("#timelineForm").val(time *animMultiplier );
-	        	fdSlider.updateSlider('timelineForm');	
+	        	fdSlider.updateSlider('timelineForm');
         	}
 
         	//Reset slider when it gets to the end
-        	if ($("#timelineForm").val() >= 100.0) {
+        	if ($("#timelineForm").val() >= dataLength) {
         		$("#timelineForm").val("0.0");
         		fdSlider.updateSlider('timelineForm');
         		globalClock = new THREE.Clock(); //Reset the clock
@@ -265,13 +260,10 @@
 <div class="container">
 	<div class="row">
 		<div class="fourcol" id="kinect">
-			<p>Four columns</p>
 		</div>
 		<div class="fourcol" id="ecg">
-			<p>Four columns</p>
 		</div>
 		<div class="fourcol last" id="eeg">
-			<p>Four columns</p>
 		</div>
 	</div>
 </div>
@@ -279,10 +271,8 @@
 <div class="container bottom">
 	<div class="row">
 		<div class="fourcol" id="fall">
-			<p>Four columns</p>
 		</div>
 		<div class="fourcol" id="gait">
-			<p>Four columns</p>
 		</div>
 		<div class="fourcol last">
 			<p>Click and drag to move camera.<br/>

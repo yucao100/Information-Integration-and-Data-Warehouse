@@ -154,7 +154,7 @@
     function fallAddLights() {
         //Create a spot light for shadows and add it
         var spotLight = new THREE.SpotLight(0xFFFFFF);
-        spotLight.position.set(0,-100,0);
+        spotLight.position.set(0,0,0);
         spotLight.castShadow = true;
         //spotLight.shadowCameraVisible = true;
         fallScene.add(spotLight);
@@ -169,11 +169,11 @@
         frontLight2.position.set(0,0,-400);
         fallScene.add(frontLight2);
 
-        var frontLight3 = new THREE.DirectionalLight(0xBBBBBB);
+        var frontLight3 = new THREE.DirectionalLight(0xDDDDDD);
         frontLight3.position.set(400,0,0);
         fallScene.add(frontLight3);
 
-        var frontLight4 = new THREE.DirectionalLight(0xBBBBBB);
+        var frontLight4 = new THREE.DirectionalLight(0xDDDDDD);
         frontLight4.position.set(-400,0,0);
         fallScene.add(frontLight4);
 
@@ -184,6 +184,7 @@
 
     function fallGetActivityName( name ) {
         switch (name) {
+            //var f = '';
             case 'INACTIVE':
                 return 'No Activity';
                 break;
@@ -252,7 +253,14 @@
                 var dataLines = data.split("\n");
                 //var array = [];
                 for (i = 0; i < dataLines.length; i++) {
-                    fallActivities.push(dataLines[i]);
+                    //Remove newline if necessary
+                    var str = dataLines[i];
+                    //if (str.charAt(str.length-1) == '\n') {
+                    if (str.match(/[\n\r]$/)) {
+                        str = str.substring(0, str.length-1);
+                    }
+
+                    fallActivities.push( str );
                 }
                 //kinectCoords.push(array);
             });
@@ -264,8 +272,6 @@
         f = f.replace(/.js/, '');
         f = fallGetActivityName(f);
         $('#fallActivity').html(f);*/
-        var f = fallGetActivityName(fallAnimFile);
-        $('#fallActivity').html(f);
         var loader = new THREE.JSONLoader(true);
         loader.load ( fallAnimFolder+fallAnimFile+'.js', function (geometry) {
             var material = geometry.materials[ 0 ];
@@ -276,7 +282,12 @@
             fallPerson.overdraw = true;
             fallPerson.castShadow = true;
             fallPerson.receiveShadow = true;
+            fallPerson.position.set(0,100,0);
             fallScene.add(fallPerson);
+
+            var f = fallGetActivityName(fallAnimFile);
+            //alert(fallAnimFile);
+            $('#fallActivity').html(f);
         } );
     }
 
@@ -293,7 +304,7 @@
         var delta = fallClock.getDelta();
         //alert(fallClock.getElapsedTime());
 
-        var time = Math.floor(fallClock.getElapsedTime()) % fallActivities.length;
+        var time = $("#timelineForm").val() % fallActivities.length;
                 //$('#fallActivity').html(fallClock.getElapsedTime());
                 //alert(time);
 
@@ -361,22 +372,22 @@
 <script type="text/javascript">
     $('#fallFrontCamBtn').click( function() { //Sets camera to show front
         fallResetCam();
-        fallCamera.position.set(0,0,55);
+        fallCamera.position.set(0,0,400);
         $.scrollTo( $('#fallContainer3D') );
     });
     $('#fallLeftCamBtn').click( function() { //Sets camera to show left side
         fallResetCam();
-        fallCamera.position.set(55,0,0);
+        fallCamera.position.set(400,0,0);
         $.scrollTo( $('#fallContainer3D') );
     });
     $('#fallRightCamBtn').click( function() { //Sets camera to show right side
         fallResetCam();
-        fallCamera.position.set(-55,0,0);
+        fallCamera.position.set(-400,0,0);
         $.scrollTo( $('#fallContainer3D') );
     });
     $('#fallBackCamBtn').click( function() { //Sets camera to show back
         fallResetCam();
-        fallCamera.position.set(0,0,-55);
+        fallCamera.position.set(0,0,-400);
         $.scrollTo( $('#fallContainer3D') );
     });
     $('#fallResetCamBtn').click( function() { //Set camera back to default position

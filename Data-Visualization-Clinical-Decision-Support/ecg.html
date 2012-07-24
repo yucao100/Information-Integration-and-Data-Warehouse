@@ -196,13 +196,14 @@
     //Animation Loop
     function ecgAnimate() {
         var delta = ecgClock.getDelta();
-        var time = Math.floor(ecgClock.getElapsedTime()) % heartrates.length;
+        var time = $("#timelineForm").val() % heartrates.length;
         bpm = heartrates[time];
+        $('#ecgOverlay').html(bpm);
         var speed = (bpm / 60) * 1000; //convert BPM to a value compatible with delta for the animation
-
 
         //Update heart to correct keyframe
         if (heart) {
+            //alert(delta);
             heart.updateAnimation( speed * delta );
         }
 
@@ -229,7 +230,8 @@
 
 <body>
 
-<div id="ecgOverlay">
+<div class="overlay overlayText">
+    BPM: <span id="ecgOverlay">0</span>
 </div>
 
 <div class="overlay overlayCamera">
@@ -246,22 +248,22 @@
 <script type="text/javascript">
     $('#ecgFrontCamBtn').click( function() { //Sets camera to show front
         ecgResetCam();
-        ecgCamera.position.set(0,0,55);
+        ecgCamera.position.set(0,60,27);
         $.scrollTo( $('#ecgContainer3D') );
     });
     $('#ecgLeftCamBtn').click( function() { //Sets camera to show left side
         ecgResetCam();
-        ecgCamera.position.set(55,0,0);
+        ecgCamera.position.set(27,60,0);
         $.scrollTo( $('#ecgContainer3D') );
     });
     $('#ecgRightCamBtn').click( function() { //Sets camera to show right side
         ecgResetCam();
-        ecgCamera.position.set(-55,0,0);
+        ecgCamera.position.set(-27,60,0);
         $.scrollTo( $('#ecgContainer3D') );
     });
     $('#ecgBackCamBtn').click( function() { //Sets camera to show back
         ecgResetCam();
-        ecgCamera.position.set(0,0,-55);
+        ecgCamera.position.set(0,60,-27);
         $.scrollTo( $('#ecgContainer3D') );
     });
     $('#ecgResetCamBtn').click( function() { //Set camera back to default position

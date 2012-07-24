@@ -255,22 +255,22 @@
 <script type="text/javascript">
     $('#gaitFrontCamBtn').click( function() { //Sets camera to show front
         gaitResetCam();
-        gaitCamera.position.set(0,0,55);
+        gaitCamera.position.set(0,0,150);
         $.scrollTo( $('#gaitContainer3D') );
     });
     $('#gaitLeftCamBtn').click( function() { //Sets camera to show left side
         gaitResetCam();
-        gaitCamera.position.set(55,0,0);
+        gaitCamera.position.set(150,0,0);
         $.scrollTo( $('#gaitContainer3D') );
     });
     $('#gaitRightCamBtn').click( function() { //Sets camera to show right side
         gaitResetCam();
-        gaitCamera.position.set(-55,0,0);
+        gaitCamera.position.set(-150,0,0);
         $.scrollTo( $('#gaitContainer3D') );
     });
     $('#gaitBackCamBtn').click( function() { //Sets camera to show back
         gaitResetCam();
-        gaitCamera.position.set(0,0,-55);
+        gaitCamera.position.set(0,0,-150);
         $.scrollTo( $('#gaitContainer3D') );
     });
     $('#gaitResetCamBtn').click( function() { //Set camera back to default position

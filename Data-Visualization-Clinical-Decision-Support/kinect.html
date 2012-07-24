@@ -115,8 +115,8 @@
         kinectLoadCoords();
         
         //kickstart animation
-        kinectAnimate(new Date().getTime());
-        //setInterval(animate, 1000 / FPS);
+        //kinectAnimate(new Date().getTime());//
+        kinectAnimate(globalClock.getElapsedTime());
     }
 
     function kinectLoadCoords() {
@@ -327,7 +327,8 @@
         //Update kinect node locations
         for (i = 0; i < kinectFilenames.length; i++) {
             if (kinectCoords && kinectCoords[i]) {
-                var j = Math.floor((time/100)%kinectCoords[0].length);
+                //var j = Math.floor((time/100)%kinectCoords[0].length); //divide by 100 to slow it down
+                var j = $("#timelineForm").val();
                 if (kinectCoords[i][j]) {
                     kinectNodes[i].position.x = kinectCoords[i][j][0]*100;
                     kinectNodes[i].position.y = kinectCoords[i][j][1]*100;
@@ -401,22 +402,22 @@
 <script type="text/javascript">
     $('#kinectFrontCamBtn').click( function() { //Sets camera to show front
         kinectResetCam();
-        kinectCamera.position.set(0,0,55);
+        kinectCamera.position.set(0,0,-300);
         $.scrollTo( $('#kinectContainer3D') );
     });
     $('#kinectLeftCamBtn').click( function() { //Sets camera to show left side
         kinectResetCam();
-        kinectCamera.position.set(55,0,0);
+        kinectCamera.position.set(300,0,0);
         $.scrollTo( $('#kinectContainer3D') );
     });
     $('#kinectRightCamBtn').click( function() { //Sets camera to show right side
         kinectResetCam();
-        kinectCamera.position.set(-55,0,0);
+        kinectCamera.position.set(-300,0,0);
         $.scrollTo( $('#kinectContainer3D') );
     });
     $('#kinectBackCamBtn').click( function() { //Sets camera to show back
         kinectResetCam();
-        kinectCamera.position.set(0,0,-55);
+        kinectCamera.position.set(0,0,300);
         $.scrollTo( $('#kinectContainer3D') );
     });
     $('#kinectResetCamBtn').click( function() { //Set camera back to default position
