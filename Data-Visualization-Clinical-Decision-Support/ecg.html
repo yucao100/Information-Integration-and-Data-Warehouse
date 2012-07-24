@@ -176,7 +176,7 @@
         ecgScene.add(ambLight);
     }
 
-    function ecgloadData() {
+    function ecgloadData(callback) {
         ecgHalt = true;
 
         jQuery.get(ecgDataFolder+ecgDataFile, function(data) {
@@ -186,6 +186,8 @@
             for (i = 0; i < dataLines.length; i++) {
                 heartrates.push(dataLines[i]);
             }
+
+            if (callback) callback();
         });
 
         ecgHalt = false;

@@ -111,7 +111,8 @@
     	var globalClock = new THREE.Clock(); //Main clock to sync all visualizations to
     	var pause = false;
     	var storedTime; //For pausing
-    	animMultiplier = 5; //
+    	animMultiplier = 5;
+		var dataLength = 100;
 
 		//Scale factor for size of visualization panels
 		visPanelFactor = 0.4;
@@ -141,36 +142,58 @@
 	    	var location = window.location.pathname;
         	var path = location.substring(1, location.lastIndexOf('/')+1);
 	        $('#filepick').fileTree({ root: 'PatientData/', script: 'jqueryFileTree/connectors/jqueryFileTree.php', multiFolder: false }, function(file) { 
-	                kinectSubfolder = file;
-	                kinectLoadCoords();
+	        		//alert(file);
+	        		//alert('trying loading');
+	        		//if (dataAvailable) {
+	        		if (file.substring(0,1) != 'x') { //Check for non-data-folder flag
+	        			//file = file.slice(1);
 
-		            eegFolder = file;
-		            loadEEGdata();
+	        			//Load all the data for all the visualizations
+		                kinectSubfolder = file;
+		                kinectLoadCoords();
 
-		            gaitFolderpath = file;
-		            loadGaitData();
+			            eegFolder = file;
+			            loadEEGdata();
 
-		            fallDataFolder = file;
-            		fallLoadData();
+			            gaitFolderpath = file;
+			            loadGaitData();
 
-            		ecgDataFolder = file;
-            		ecgloadData();
+			            fallDataFolder = file;
+	            		fallLoadData();
+
+	            		ecgDataFolder = file;
+	            		ecgloadData(replaceTimeline); //when it's done loading, replace the timeline
+
+
+	        		}
 
 	        }, true, path); //True to only show folders
 
+	        //Create timeline slider
+			createSlider();
 
 
-
-		    //Kickstart timeline
-		    advanceTime();
 	    });
 
+		function replaceTimeline() {
+
+	            		//Replace the timeline slider with one having an appropriate length for the new data
+	            		//if (heartrates) alert(heartrates);
+	            		dataLength = heartrates.length;
+	            		fdSlider.destroySlider('timelineForm');
+	            		$('.fd-slider').remove();
+	            		//alert(dataLength);
+	            		//$().html('');
+	            		//<input type="text" name="timelineForm" id="timelineForm" value="0" />
+						createSlider();
+		}
+
 	    function advanceTime() {
-        	//Move the slider 1 step
+        	//Move the slider
         	if (!pause) {
         		var time = globalClock.getElapsedTime();
-	        	$("#timelineForm").val(time *5 ); //only to speed up for demonstration purposes
-	        	fdSlider.updateSlider('timelineForm');        		
+	        	$("#timelineForm").val(time *animMultiplier );
+	        	fdSlider.updateSlider('timelineForm');	
         	}
 
         	//Reset slider when it gets to the end
@@ -194,6 +217,25 @@
 	    	pause = !pause;
 	    }
 
+	    function createSlider() {
+			fdSlider.createSlider({
+			  // Associate the slider with the form element 
+			  inp:document.getElementById("timelineForm"),
+			  // A minimum value of 5
+			  min:0,
+			  // A maximum value of 15
+			  max: dataLength,
+			  // A step/increment of 0.2
+			  step:1,
+			  // Hide the input box
+			  hideInput:true,
+			  //
+			  forceValue:true
+			});
+
+		    //Kickstart timeline
+		    advanceTime();
+	    }
 	</script>
 
 </head>
@@ -264,18 +306,6 @@
        		<!-- <input name="html5shim-1" id="html5shim-1" type="range" min="0" max="100" step="0.20" title="Timeline" value="0.0" /> -->
        		<input type="text" name="timelineForm" id="timelineForm" value="0" />
        		<script>
-				fdSlider.createSlider({
-				  // Associate the slider with the form element 
-				  inp:document.getElementById("timelineForm"),
-				  // A minimum value of 5
-				  min:0,
-				  // A maximum value of 15
-				  max:100,
-				  // A step/increment of 0.2
-				  step:.2,
-				  // Hide the input box
-				  hideInput:true
-				});
 			 </script>
        	</p>
 

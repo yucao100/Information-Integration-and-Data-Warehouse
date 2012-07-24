@@ -53,6 +53,14 @@ if(jQuery) (function($){
 					$(c).addClass('wait');
 					$(".jqueryFileTree.start").remove();
 					$.post(o.script, { dir: t, foldersOnly: b, path: p }, function(data) {
+						/*if (data.substring(0,1) == 'x') { //Check for non-data-folder flag
+							data = data.slice(1); 
+							//alert(data);
+							dataAvailable = false;
+						} else {
+							dataAvailable = true;
+							alert('set true');
+						}*/
 						$(c).find('.start').html('');
 						$(c).removeClass('wait').append(data);
 						if( o.root == t ) $(c).find('UL:hidden').show(); else $(c).find('UL:hidden').slideDown({ duration: o.expandSpeed, easing: o.expandEasing });
@@ -70,7 +78,13 @@ if(jQuery) (function($){
 									$(this).parent().parent().find('LI.directory').removeClass('expanded').addClass('collapsed');
 								}
 								$(this).parent().find('UL').remove(); // cleanup
-								showTree( $(this).parent(), escape($(this).attr('rel').match( /.*\// )) );
+								var rel = $(this).attr('rel');
+								if (rel.substring(0,1) == 'x') {
+									rel = rel.slice(1); 
+								} /*else {
+
+								}*/
+								showTree( $(this).parent(), escape(rel.match( /.*\// )) );
 								$(this).parent().removeClass('collapsed').addClass('expanded');
 
 								if (b) {

@@ -22,31 +22,50 @@ $_POST['foldersOnly'] = urldecode($_POST['foldersOnly']);
 //$root = $_SERVER['DOCUMENT_ROOT'];
 $root = $_SERVER['DOCUMENT_ROOT'] . urldecode($_POST['path']);
 
+$returnData = '';
+
 if( file_exists($root . $_POST['dir']) ) {
 	$files = scandir($root . $_POST['dir']);
 	natcasesort($files);
 	if( count($files) > 2 ) { /* The 2 accounts for . and .. */
-		echo "<ul class=\"jqueryFileTree\" style=\"display: none;\">";
+		$returnData = $returnData . "<ul class=\"jqueryFileTree\" style=\"display: none;\">";
 		// All dirs
 		foreach ( $files as $file ) {
 			if ( $file != '.' && $file != '..' && file_exists($root . $_POST['dir'] . $file) && !file_exists($root . $_POST['dir'] . 'ecg') ) {
+				/*error_log(($root . $_POST['dir'] . $file) );
+				if (file_exists($root . $_POST['dir'] . $file . '/ecg')) {error_log('true');}
+				else  {error_log('false');}*/
+
 				if (is_dir($root . $_POST['dir'] . $file)) { //dirs
-					echo "<li class=\"directory collapsed\"><a href=\"#\" file=\"" . $file ."\" rel=\"" . htmlentities($_POST['dir'] . $file) . "/\">" . htmlentities($file) . "</a></li>";
+					//Add a flag for folders with no data (eg. a patient's folder, containing several exercise folders)
+					/*if (!($returnData[0] == 'x')) {
+						//$returnData = 'x' . $returnData;
+					}*/
+					if (file_exists($root . $_POST['dir'] . $file . '/ecg')) {
+						//error_log('AAAAAAAAA');
+						$returnData = $returnData . "<li class=\"directory collapsed\"><a href=\"#\" file=\"" . $file ."\" rel=\"" . htmlentities($_POST['dir'] . $file) . "/\">" . htmlentities($file) . "</a></li>";
+					} else {
+						//error_log('BBBBBBBB');
+						$returnData = $returnData . "<li class=\"directory collapsed\"><a href=\"#\" file=\"" . $file ."\" rel=\"x" . htmlentities($_POST['dir'] . $file) . "/\">" . htmlentities($file) . "</a></li>";
+					}
+					
 				}
-				else if (!is_dir($root . $_POST['dir'] . $file) && $_POST['foldersOnly'] == 'false') { //files; don't use for kinect data
+				else if (!is_dir($root . $_POST['dir'] . $file) && $_POST['foldersOnly'] == 'false') { //files; don't use for our data
 					$ext = preg_replace('/^.*\./', '', $file);
-					echo "<li class=\"file ext_$ext\"><a href=\"#\" rel=\"" . htmlentities($_POST['dir'] . $file) . "\">" . htmlentities($file) . "</a></li>";
+					$returnData = $returnData . "<li class=\"file ext_$ext\"><a href=\"#\" rel=\"" . htmlentities($_POST['dir'] . $file) . "\">" . htmlentities($file) . "</a></li>";
 				}
 			}
 		}
-		echo "</ul>";	
+		$returnData = $returnData . "</ul>";	
 	}
 	else {
-		echo 'Not enough files';
+		$returnData = $returnData . 'Not enough files';
 	}
 }
 else {
-	echo 'Path not found: ' . $root . $_POST['dir'];
+	$returnData = $returnData . 'Path not found: ' . $root . $_POST['dir'];
 }
+
+echo $returnData;
 
 ?>

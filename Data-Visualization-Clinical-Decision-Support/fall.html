@@ -154,20 +154,28 @@
     function fallAddLights() {
         //Create a spot light for shadows and add it
         var spotLight = new THREE.SpotLight(0xFFFFFF);
-        spotLight.position.set(300,300,400);
+        spotLight.position.set(0,-100,0);
         spotLight.castShadow = true;
         //spotLight.shadowCameraVisible = true;
         fallScene.add(spotLight);
 
         //Directional light
         var frontLight = new THREE.DirectionalLight(0xFFFFFF);
-        frontLight.position.set(400,-900,200);
+        frontLight.position.set(0,0,200);
         //frontLight.castShadow = true;
         fallScene.add(frontLight);
 
         var frontLight2 = new THREE.DirectionalLight(0xFFFFFF);
-        frontLight2.position.set(0,0,-150);
+        frontLight2.position.set(0,0,-400);
         fallScene.add(frontLight2);
+
+        var frontLight3 = new THREE.DirectionalLight(0xBBBBBB);
+        frontLight3.position.set(400,0,0);
+        fallScene.add(frontLight3);
+
+        var frontLight4 = new THREE.DirectionalLight(0xBBBBBB);
+        frontLight4.position.set(-400,0,0);
+        fallScene.add(frontLight4);
 
         //Ambient lighting
         var ambLight = new THREE.AmbientLight(0xFFFFFF);
