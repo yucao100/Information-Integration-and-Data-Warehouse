@@ -41,7 +41,11 @@
     var ecgLastKeyframe = 0;
     var ecgCurrentKeyframe = 0;
 
-    var ecgSpeed = 1000;
+    var bpm = 80;
+    var heartrates = [];
+
+    var ecgDataFolder = '/Data-Visualization-Clinical-Decision-Support/PatientData/Default/';
+    var ecgDataFile = 'ecg/data.txt';
 
     //Initializes the scene
     function ecgInit() {
@@ -75,6 +79,9 @@
 
         //Set up keyboard listener
         document.addEventListener("keydown", ecgHandleKey, false);
+
+        //Load the default data
+        ecgloadData();
         
         //kickstart animation
         ecgAnimate();
@@ -95,29 +102,25 @@
     function ecgSetCanvasSize() {
         ecgWidth = ecgCanvas.clientWidth;
         ecgHeight = $(window).height() * visPanelFactor;
+
+        //JavaScript equivalent of min-height CSS
+        if ($('#ecg').hasClass('twelvecol')) {
+            ecgHeight = 450;
+        } else if (ecgHeight < 233) {
+            ecgHeight = 233;
+        }
+
         ecgRenderer.setSize(ecgWidth, ecgHeight);
     }
 
     function ecgHandleKey(e) {
         if (e.keyCode == 32) { //Spacebar
             ecgResetCam();
-        } else if (e.keyCode == 38 && ecgSpeed < 5000) { //Up Arrow
+        } /*else if (e.keyCode == 38 && ecgSpeed < 5000) { //Up Arrow
             ecgSpeed += 100; //Speed up
         } else if (e.keyCode == 40 && ecgSpeed > 0) { //Down Arrow
             ecgSpeed -= 100; //Slow down
-        } else if (e.keyCode == 49) { //Number 1 - sets camera to show left side
-            ecgResetCam();
-            ecgCamera.position.set(55,0,0);
-        } else if (e.keyCode == 50) { //Number 2 - sets camera to show front
-            ecgResetCam();
-            ecgCamera.position.set(0,0,55);
-        } else if (e.keyCode == 51) { //Number 3 - sets camera to show right side
-            ecgResetCam();
-            ecgCamera.position.set(-55,0,0);
-        } else if (e.keyCode == 52) { //Number 4 - sets camera to show back
-            ecgResetCam();
-            ecgCamera.position.set(0,0,-55);
-        }
+        } */
     }
 
     //Puts the camera back at the starting position
@@ -133,7 +136,7 @@
         ecgCamera.position.set(30,40,25); //try multiples of 6,8,5
 
         //Controls to move the camera
-        ecgCamCntrl = new THREE.TrackballControls(ecgCamera, ecgRenderer.domElement);
+        ecgCamCntrl = new THREE.TrackballControlsCustom(ecgCamera, ecgRenderer.domElement);
         ecgCamCntrl.keys = [ecgROT, ecgZOOM, ecgPAN]; //rotate, zoom, pan
     }
 
@@ -173,23 +176,32 @@
         ecgScene.add(ambLight);
     }
 
+    function ecgloadData() {
+        ecgHalt = true;
+
+        jQuery.get(ecgDataFolder+ecgDataFile, function(data) {
+            heartrates = [];
+            
+            var dataLines = data.split("\n");
+            for (i = 0; i < dataLines.length; i++) {
+                heartrates.push(dataLines[i]);
+            }
+        });
+
+        ecgHalt = false;
+    }
+
     //Animation Loop
     function ecgAnimate() {
         var delta = ecgClock.getDelta();
+        var time = Math.floor(ecgClock.getElapsedTime()) % heartrates.length;
+        bpm = heartrates[time];
+        var speed = (bpm / 60) * 1000; //convert BPM to a value compatible with delta for the animation
+
 
         //Update heart to correct keyframe
         if (heart) {
-            heart.updateAnimation( ecgSpeed * delta );
-            //$('#distTraveled').html(heart.currentKeyframe);
-            
-            //Update number of steps taken
-                    /*Need to know on which keyframes the model makes a footstep
-                    Keyframes in Three.js start from 0 but in Blender from 1*/
-            //Assume the footsteps are on the first frame and the middle frame (first one foot and then the other)
-            /*if (heart.currentKeyframe == 0 || heart.currentKeyframe == (heart.length / 2) - 1) {
-                steps++;
-                $('#numSteps').html(steps);
-            }*/
+            heart.updateAnimation( speed * delta );
         }
 
         ecgCanvasResize();
@@ -218,7 +230,60 @@
 <div id="ecgOverlay">
 </div>
 
-<div id="ecgContainer3D" class="container3D"></div>
+<div class="overlay overlayCamera">
+    <a href="#ecgcanvas"><img src="icons/front.png" id="ecgFrontCamBtn"></a>
+    <a href="#ecgcanvas"><img src="icons/left.png" id="ecgLeftCamBtn"></a>
+    <a href="#ecgcanvas"><img src="icons/right.png" id="ecgRightCamBtn"></a>
+    <a href="#ecgcanvas"><img src="icons/back.png" id="ecgBackCamBtn"></a>
+    <a href="#ecgcanvas"><img src="icons/reset.png" id="ecgResetCamBtn"></a>
+    <a href="#ecgcanvas"><img src="icons/full.png" id="ecgFullBtn"></a>
+    <a href="#ecgcanvas"><img src="icons/zoomIn.png" id="ecgZoomInBtn"></a>
+    <a href="#ecgcanvas"><img src="icons/ZoomOut.png" id="ecgZoomOutBtn"></a>
+</div>
+
+<script type="text/javascript">
+    $('#ecgFrontCamBtn').click( function() { //Sets camera to show front
+        ecgResetCam();
+        ecgCamera.position.set(0,0,55);
+        $.scrollTo( $('#ecgContainer3D') );
+    });
+    $('#ecgLeftCamBtn').click( function() { //Sets camera to show left side
+        ecgResetCam();
+        ecgCamera.position.set(55,0,0);
+        $.scrollTo( $('#ecgContainer3D') );
+    });
+    $('#ecgRightCamBtn').click( function() { //Sets camera to show right side
+        ecgResetCam();
+        ecgCamera.position.set(-55,0,0);
+        $.scrollTo( $('#ecgContainer3D') );
+    });
+    $('#ecgBackCamBtn').click( function() { //Sets camera to show back
+        ecgResetCam();
+        ecgCamera.position.set(0,0,-55);
+        $.scrollTo( $('#ecgContainer3D') );
+    });
+    $('#ecgResetCamBtn').click( function() { //Set camera back to default position
+        ecgResetCam();
+        $.scrollTo( $('#ecgContainer3D') );
+    });
+    $('#ecgFullBtn').click( function() { //Maximize this panel
+        $('#ecg').toggleClass('fourcol twelvecol');
+        ecgCanvasResize();
+        $.scrollTo( $('#ecgContainer3D') );
+    });
+    $('#ecgZoomInBtn').click( function(e) { //Zoom in
+        ecgCamCntrl.zoomin(e);
+        $.scrollTo( $('#ecgContainer3D') );
+    });
+    $('#ecgZoomOutBtn').click( function(e) { //Zoom out
+        ecgCamCntrl.zoomout(e);
+        $.scrollTo( $('#ecgContainer3D') );
+    });
+</script>
+
+<div id="ecgContainer3D" class="container3D">
+<a name="#ecgcanvas"></a>
+</div>
 
 <!--<p>Click and drag to move camera. Hold <b>Z</b> to rotate, <b>X</b> to zoom, or <b>C</b> to pan.</p>-->
 

@@ -3,7 +3,7 @@
  * Modified by Chris Lenk to provide zooming on demand
  */
 
-THREE.TrackballControls = function ( object, domElement ) {
+THREE.TrackballControlsCustom = function ( object, domElement ) {
 
 	THREE.EventTarget.call( this );
 
@@ -361,6 +361,16 @@ THREE.TrackballControls = function ( object, domElement ) {
 		}
 
 	};
+
+	//Added by Chris Lenk
+	this.zoomin = function( event ) {
+		_zoomStart = _this.getMouseOnScreen( event.clientX, event.clientY );
+		_zoomEnd = _this.getMouseOnScreen( event.clientX, event.clientY -15 );
+	}
+	this.zoomout = function( event ) {
+		_zoomStart = _this.getMouseOnScreen( event.clientX, event.clientY );
+		_zoomEnd = _this.getMouseOnScreen( event.clientX, event.clientY +15 );
+	}
 
 	function mouseup( event ) {
 

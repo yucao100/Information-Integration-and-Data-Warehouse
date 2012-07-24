@@ -46,7 +46,7 @@
     var ankleLeft;
     var footLeft;
 
-    var kinectSubfolder = '/kinectdata/Kinect_Skeletal_Point_Data/rightArm/'; // initial or default
+    var kinectSubfolder = '/Data-Visualization-Clinical-Decision-Support/PatientData/Default/'; // initial default
     var kinectFilenames = [
         'head.txt',
         'shoulderCenter.txt',
@@ -112,7 +112,7 @@
         kinectRenderer.render(kinectScene, kinectCamera);
 
         //Load the text files containing coordinate data
-        //loadCoords();
+        kinectLoadCoords();
         
         //kickstart animation
         kinectAnimate(new Date().getTime());
@@ -120,9 +120,12 @@
     }
 
     function kinectLoadCoords() {
-        kinectCoords = [];
+        kinectHalt = true;
+
         for (j = 0; j < kinectFilenames.length; j++) {
-            jQuery.get(subfolder+kinectFilenames[j], function(data) {
+            kinectCoords = [];
+
+            jQuery.get(kinectSubfolder+'kinect/'+kinectFilenames[j], function(data) {
                 var dataLines = data.split("\n");
                 var array = [];
                 for (i = 0; i < dataLines.length; i++) {
@@ -131,6 +134,7 @@
                 kinectCoords.push(array);
             });
         }
+        kinectHalt = false;
     }
 
     //Updates the canvas size on window resize
@@ -148,29 +152,25 @@
     function kinectSetCanvasSize() {
         kinectWidth = kinectCanvas.clientWidth;
         kinectHeight = $(window).height() * visPanelFactor;
+
+        //JavaScript equivalent of min-height CSS
+        if ($('#kinect').hasClass('twelvecol')) {
+            kinectHeight = 450;
+        } else if (kinectHeight < 233) {
+            kinectHeight = 233;
+        }
+
         kinectRenderer.setSize(kinectWidth, kinectHeight);
     }
 
     function kinectHandleKey(e) {
         if (e.keyCode == 32) { //Spacebar
             kinectResetCam();
-        } else if (e.keyCode == 38 && kinectSpeed < 5000) { //Up Arrow
+        } /*else if (e.keyCode == 38 && kinectSpeed < 5000) { //Up Arrow
             kinectSpeed += 100; //Speed up
         } else if (e.keyCode == 40 && kinectSpeed > 0) { //Down Arrow
             kinectSpeed -= 100; //Slow down
-        } else if (e.keyCode == 49) { //Number 1 - sets camera to show left side
-            kinectResetCam();
-            kinectCamera.position.set(55,0,0);
-        } else if (e.keyCode == 50) { //Number 2 - sets camera to show front
-            kinectResetCam();
-            kinectCamera.position.set(0,0,55);
-        } else if (e.keyCode == 51) { //Number 3 - sets camera to show right side
-            kinectResetCam();
-            kinectCamera.position.set(-55,0,0);
-        } else if (e.keyCode == 52) { //Number 4 - sets camera to show back
-            kinectResetCam();
-            kinectCamera.position.set(0,0,-55);
-        }
+        }*/
     }
 
     //Puts the camera back at the starting position
@@ -186,7 +186,7 @@
         kinectCamera.position.set(0,0,-200);
 
         //Controls to move the camera
-        kinectCamCntrl = new THREE.TrackballControls(kinectCamera, kinectRenderer.domElement);
+        kinectCamCntrl = new THREE.TrackballControlsCustom(kinectCamera, kinectRenderer.domElement);
         kinectCamCntrl.keys = [kinectROT, kinectZOOM, kinectPAN]; //rotate, zoom, pan
 
         //Keyboard listener
@@ -355,17 +355,17 @@
 
     $(document).ready( function() {
 
-        var location = window.location.pathname;
+        /*var location = window.location.pathname;
         var path = location.substring(1, location.lastIndexOf('/')+1);
         
-        $('#filepick').fileTree({ root: 'kinectdata/Kinect_Skeletal_Point_Data/', script: 'jqueryFileTree/connectors/jqueryFileTree.php', multiFolder: false }, function(file) { 
+        $('#filepick').fileTree({ root: 'PatientData/', script: 'jqueryFileTree/connectors/jqueryFileTree.php', multiFolder: false }, function(file) { 
 
                 kinectHalt = true;
                 kinectSubfolder = file;
                 kinectLoadCoords();
                 kinectHalt = false;
 
-        }, true, path); //True to only show folders
+        }, true, path); //True to only show folders*/
         
         kinectInit();
     });
@@ -387,7 +387,60 @@
     <div id="filepick" class='demo'></div>
 </div> -->
 
-<div id="kinectContainer3D" class="container3D"></div>
+<div class="overlay overlayCamera">
+    <a href="#kinectcanvas"><img src="icons/front.png" id="kinectFrontCamBtn"></a>
+    <a href="#kinectcanvas"><img src="icons/left.png" id="kinectLeftCamBtn"></a>
+    <a href="#kinectcanvas"><img src="icons/right.png" id="kinectRightCamBtn"></a>
+    <a href="#kinectcanvas"><img src="icons/back.png" id="kinectBackCamBtn"></a>
+    <a href="#kinectcanvas"><img src="icons/reset.png" id="kinectResetCamBtn"></a>
+    <a href="#kinectcanvas"><img src="icons/full.png" id="kinectFullBtn"></a>
+    <a href="#kinectcanvas"><img src="icons/zoomIn.png" id="kinectZoomInBtn"></a>
+    <a href="#kinectcanvas"><img src="icons/ZoomOut.png" id="kinectZoomOutBtn"></a>
+</div>
+
+<script type="text/javascript">
+    $('#kinectFrontCamBtn').click( function() { //Sets camera to show front
+        kinectResetCam();
+        kinectCamera.position.set(0,0,55);
+        $.scrollTo( $('#kinectContainer3D') );
+    });
+    $('#kinectLeftCamBtn').click( function() { //Sets camera to show left side
+        kinectResetCam();
+        kinectCamera.position.set(55,0,0);
+        $.scrollTo( $('#kinectContainer3D') );
+    });
+    $('#kinectRightCamBtn').click( function() { //Sets camera to show right side
+        kinectResetCam();
+        kinectCamera.position.set(-55,0,0);
+        $.scrollTo( $('#kinectContainer3D') );
+    });
+    $('#kinectBackCamBtn').click( function() { //Sets camera to show back
+        kinectResetCam();
+        kinectCamera.position.set(0,0,-55);
+        $.scrollTo( $('#kinectContainer3D') );
+    });
+    $('#kinectResetCamBtn').click( function() { //Set camera back to default position
+        kinectResetCam();
+        $.scrollTo( $('#kinectContainer3D') );
+    });
+    $('#kinectFullBtn').click( function() { //Maximize this panel
+        $('#kinect').toggleClass('fourcol twelvecol');
+        kinectCanvasResize();
+        $.scrollTo( $('#kinectContainer3D') );
+    });
+    $('#kinectZoomInBtn').click( function(e) { //Zoom in
+        kinectCamCntrl.zoomin(e);
+        $.scrollTo( $('#kinectContainer3D') );
+    });
+    $('#kinectZoomOutBtn').click( function(e) { //Zoom out
+        kinectCamCntrl.zoomout(e);
+        $.scrollTo( $('#kinectContainer3D') );
+    });
+</script>
+
+<div id="kinectContainer3D" class="container3D">
+<a name="#kinectcanvas"></a>
+</div>
 
 <!--<p>Click and drag to move camera. Hold <b>Z</b> to rotate, <b>X</b> to zoom, or <b>C</b> to pan.</p>-->
 

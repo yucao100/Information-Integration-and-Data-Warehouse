@@ -29,7 +29,12 @@
     var fallPerson;
     var fallClock = new THREE.Clock();
 
-    var fallAnimFile = 'fall_detection/INACTIVE.js';
+    var fallDataFolder = '/Data-Visualization-Clinical-Decision-Support/PatientData/Default/';
+    var fallDataFile = 'fall/data.txt';
+    var fallAnimFolder = '/Data-Visualization-Clinical-Decision-Support/fall_detection/';
+    var fallAnimFile = 'INACTIVE';
+
+    var fallActivities = []; //Array of activities in currently loaded data sample 
 
     //Keys
     fallROT = 90;
@@ -80,6 +85,9 @@
 
         //Set up keyboard listener
         document.addEventListener("keydown", fallHandleKey, false);
+
+        //Load the default data
+        fallLoadData();
         
         //kickstart animation
         fallAnimate();
@@ -100,32 +108,25 @@
     function fallSetCanvasSize() {
         fallWidth = fallCanvas.clientWidth;
         fallHeight = $(window).height() * visPanelFactor;
-        if (fallHeight < 210) { //min-height equivalent
-            fallHeight = 210
+
+        //JavaScript equivalent of min-height CSS
+        if ($('#fall').hasClass('twelvecol')) {
+            fallHeight = 450;
+        } else if (fallHeight < 233) {
+            fallHeight = 233;
         }
+
         fallRenderer.setSize(fallWidth, fallHeight);
     }
 
     function fallHandleKey(e) {
         if (e.keyCode == 32) { //Spacebar
             fallResetCam();
-        } else if (e.keyCode == 38 && fallSpeed < 5000) { //Up Arrow
+        } /*else if (e.keyCode == 38 && fallSpeed < 5000) { //Up Arrow
             fallSpeed += 100; //Speed up
         } else if (e.keyCode == 40 && fallSpeed > 0) { //Down Arrow
             fallSpeed -= 100; //Slow down
-        } else if (e.keyCode == 49) { //Number 1 - sets camera to show left side
-            fallResetCam();
-            fallCamera.position.set(55,0,0);
-        } else if (e.keyCode == 50) { //Number 2 - sets camera to show front
-            fallResetCam();
-            fallCamera.position.set(0,0,55);
-        } else if (e.keyCode == 51) { //Number 3 - sets camera to show right side
-            fallResetCam();
-            fallCamera.position.set(-55,0,0);
-        } else if (e.keyCode == 52) { //Number 4 - sets camera to show back
-            fallResetCam();
-            fallCamera.position.set(0,0,-55);
-        }
+        }*/
     }
 
     //Puts the camera back at the starting position
@@ -143,7 +144,7 @@
         fallCamera.position.set(360,-55,575);
 
         //Controls to move the camera
-        fallCamCntrl = new THREE.TrackballControls(fallCamera, fallRenderer.domElement);
+        fallCamCntrl = new THREE.TrackballControlsCustom(fallCamera, fallRenderer.domElement);
         fallCamCntrl.keys = [fallROT, fallZOOM, fallPAN]; //rotate, zoom, pan
 
         //Reset the camera when spacebar pressed
@@ -164,9 +165,9 @@
         //frontLight.castShadow = true;
         fallScene.add(frontLight);
 
-        var frontLight = new THREE.DirectionalLight(0xFFFFFF);
-        frontLight.position.set(0,0,0);
-        fallScene.add(frontLight);
+        var frontLight2 = new THREE.DirectionalLight(0xFFFFFF);
+        frontLight2.position.set(0,0,-150);
+        fallScene.add(frontLight2);
 
         //Ambient lighting
         var ambLight = new THREE.AmbientLight(0xFFFFFF);
@@ -235,13 +236,30 @@
         }
     }
 
+    function fallLoadData() {
+        fallActivities = [];
+
+        //for (j = 0; j < kinectFilenames.length; j++) {
+            jQuery.get(fallDataFolder+fallDataFile, function(data) {
+                var dataLines = data.split("\n");
+                //var array = [];
+                for (i = 0; i < dataLines.length; i++) {
+                    fallActivities.push(dataLines[i]);
+                }
+                //kinectCoords.push(array);
+            });
+        //}
+    }
+
     function fallAddObjs() {
-        var f = fallAnimFile.replace(/^.*[\\\/]/, '');
+        /*var f = fallAnimFile.replace(/^.*[\\\/]/, ''); //Get just the filename
         f = f.replace(/.js/, '');
         f = fallGetActivityName(f);
+        $('#fallActivity').html(f);*/
+        var f = fallGetActivityName(fallAnimFile);
         $('#fallActivity').html(f);
         var loader = new THREE.JSONLoader(true);
-        loader.load ( fallAnimFile, function (geometry) {
+        loader.load ( fallAnimFolder+fallAnimFile+'.js', function (geometry) {
             var material = geometry.materials[ 0 ];
             material.morphTargets = true;
 
@@ -265,9 +283,23 @@
     //Animation Loop
     function fallAnimate() {
         var delta = fallClock.getDelta();
+        //alert(fallClock.getElapsedTime());
+
+        var time = Math.floor(fallClock.getElapsedTime()) % fallActivities.length;
+                //$('#fallActivity').html(fallClock.getElapsedTime());
+                //alert(time);
+
+        if (fallAnimFile != fallActivities[time]) {
+            fallAnimFile = fallActivities[time];
+
+            if (fallAnimFile) {
+                fallLoadAnim();
+            }
+        }
 
         //Update person to correct keyframe
         if (fallPerson) {
+
             fallPerson.updateAnimation( fallSpeed * delta );
         }
 
@@ -284,13 +316,13 @@
 
     $(document).ready( function() {
 
-        var location = window.location.pathname;
+        /*var location = window.location.pathname;
         var path = location.substring(1, location.lastIndexOf('/')+1);
         
         $('#filepick').fileTree({ root: 'fall_detection/', script: 'jqueryFileTree/connectors/jqueryFileTree.php', multiFolder: false }, function(file) { 
             fallAnimFile = file;
             fallLoadAnim();
-        }, false, path); //False to show folders AND files
+        }, false, path); //False to show folders AND files*/
         
         fallInit();
     });
@@ -308,44 +340,52 @@
 </div>
 
 <div class="overlay overlayCamera">
-    <img src="icons/front.png" id="frontCamBtn">
-    <img src="icons/left.png" id="leftCamBtn">
-    <img src="icons/right.png" id="rightCamBtn">
-    <img src="icons/back.png" id="backCamBtn">
-    <img src="icons/reset.png" id="resetCamBtn">
-    <img src="icons/full.png" id="fullBtn">
-    <img src="icons/zoomIn.png" id="zoomInBtn">
-    <img src="icons/ZoomOut.png" id="zoomOutBtn">
+    <a href="#fallcanvas"><img src="icons/front.png" id="fallFrontCamBtn"></a>
+    <a href="#fallcanvas"><img src="icons/left.png" id="fallLeftCamBtn"></a>
+    <a href="#fallcanvas"><img src="icons/right.png" id="fallRightCamBtn"></a>
+    <a href="#fallcanvas"><img src="icons/back.png" id="fallBackCamBtn"></a>
+    <a href="#fallcanvas"><img src="icons/reset.png" id="fallResetCamBtn"></a>
+    <a href="#fallcanvas"><img src="icons/full.png" id="fallFullBtn"></a>
+    <a href="#fallcanvas"><img src="icons/zoomIn.png" id="fallZoomInBtn"></a>
+    <a href="#fallcanvas"><img src="icons/ZoomOut.png" id="fallZoomOutBtn"></a>
 </div>
 
 <script type="text/javascript">
-    $('#frontCamBtn').click( function() { //Sets camera to show front
+    $('#fallFrontCamBtn').click( function() { //Sets camera to show front
         fallResetCam();
         fallCamera.position.set(0,0,55);
+        $.scrollTo( $('#fallContainer3D') );
     });
-    $('#leftCamBtn').click( function() { //Sets camera to show left side
+    $('#fallLeftCamBtn').click( function() { //Sets camera to show left side
         fallResetCam();
         fallCamera.position.set(55,0,0);
+        $.scrollTo( $('#fallContainer3D') );
     });
-    $('#rightCamBtn').click( function() { //Sets camera to show right side
+    $('#fallRightCamBtn').click( function() { //Sets camera to show right side
         fallResetCam();
         fallCamera.position.set(-55,0,0);
+        $.scrollTo( $('#fallContainer3D') );
     });
-    $('#backCamBtn').click( function() { //Sets camera to show back
+    $('#fallBackCamBtn').click( function() { //Sets camera to show back
         fallResetCam();
         fallCamera.position.set(0,0,-55);
+        $.scrollTo( $('#fallContainer3D') );
     });
-    $('#resetCamBtn').click( function() { //Set camera back to default position
+    $('#fallResetCamBtn').click( function() { //Set camera back to default position
         fallResetCam();
     });
-    $('#fullBtn').click( function() { //Maximize this panel
-        
+    $('#fallFullBtn').click( function() { //Maximize this panel
+        $('#fall').toggleClass('fourcol twelvecol');
+        fallCanvasResize();
+        $.scrollTo( $('#fallContainer3D') );
     });
-    $('#zoomInBtn').click( function() { //Zoom in
-
+    $('#fallZoomInBtn').click( function(e) { //Zoom in
+        fallCamCntrl.zoomin(e);
+        $.scrollTo( $('#fallContainer3D') );
     });
-    $('#zoomOutBtn').click( function() { //Zoom out
-        
+    $('#fallZoomOutBtn').click( function(e) { //Zoom out
+        fallCamCntrl.zoomout(e);
+        $.scrollTo( $('#fallContainer3D') );
     });
 </script>
 
@@ -353,7 +393,9 @@
     <div id="filepick" class='demo'></div>
 </div> -->
 
-<div id="fallContainer3D" class="container3D"></div>
+<div id="fallContainer3D" class="container3D">
+<a name="#fallcanvas"></a>
+</div>
 
 <!-- <p>Click and drag to move camera. Hold <b>Z</b> to rotate, <b>X</b> to zoom, or <b>C</b> to pan.</p>
 

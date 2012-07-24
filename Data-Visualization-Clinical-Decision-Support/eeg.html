@@ -81,8 +81,8 @@
         'right5',
         'right6',
         'right7'];
-    //var eegPath = ""; // path to eeg value text files
-    var eegFolder = 'eegdata/George/'; //default/initial
+
+    var eegFolder = 'PatientData/Default/'; //default/initial
     var eegVals; // array of arrays - one for each file/node, containing all that node's values
 
     //Set up color gradient
@@ -105,6 +105,14 @@
     function eegSetCanvasSize() {
         eegWidth = eegCanvas.clientWidth;
         eegHeight = $(window).height() * visPanelFactor;
+
+        //JavaScript equivalent of min-height CSS
+        if ($('#eeg').hasClass('twelvecol')) {
+            eegHeight = 450;
+        } else if (eegHeight < 233) {
+            eegHeight = 233;
+        }
+
         eegRenderer.setSize(eegWidth, eegHeight);
     }
 
@@ -155,29 +163,20 @@
     function eegHandleKey(e) {
         if (e.keyCode == 32) { //Spacebar
             eegResetCam();
-        } else if (e.keyCode == 38 && eegSpeed < 5000) { //Up Arrow
+        } /*else if (e.keyCode == 38 && eegSpeed < 5000) { //Up Arrow
             eegSpeed += 100; //Speed up
         } else if (e.keyCode == 40 && eegSpeed > 0) { //Down Arrow
             eegSpeed -= 100; //Slow down
-        } else if (e.keyCode == 49) { //Number 1 - sets camera to show left side
-            eegResetCam();
-            eegCamera.position.set(55,0,0);
-        } else if (e.keyCode == 50) { //Number 2 - sets camera to show front
-            eegResetCam();
-            eegCamera.position.set(0,0,55);
-        } else if (e.keyCode == 51) { //Number 3 - sets camera to show right side
-            eegResetCam();
-            eegCamera.position.set(-55,0,0);
-        } else if (e.keyCode == 52) { //Number 4 - sets camera to show back
-            eegResetCam();
-            eegCamera.position.set(0,0,-55);
-        }
+        }*/
     }
 
     function loadEEGdata() {
-        eegVals = [];
+        eegHalt = true;
+
         for (j = 0; j < eegFilenames.length; j++) {
-            jQuery.get(eegFolder+eegFilenames[j]+".txt", function(data) {
+            eegVals = [];
+
+            jQuery.get(eegFolder+'eeg/'+eegFilenames[j]+".txt", function(data) {
                 //var array = [];
                         //if (j == 1) {
                             //alert(data.split(","));
@@ -188,6 +187,7 @@
                 //eegVals.push(array);
             });
         }
+        eegHalt = false;
     }
 
     //Puts the camera back at the starting position, rotation, etc
@@ -204,7 +204,7 @@
         eegCamera.position.set(55,0,0);
 
         //Controls to move the camera
-        eegCamCntrl = new THREE.TrackballControls(eegCamera, eegRenderer.domElement);
+        eegCamCntrl = new THREE.TrackballControlsCustom(eegCamera, eegRenderer.domElement);
         eegCamCntrl.keys = [eegROT, eegZOOM, eegPAN]; //rotate, zoom, pan
 
         //Reset the camera when spacebar pressed
@@ -308,11 +308,9 @@
     function eegAnimate() {
         var time = eegClock.getElapsedTime();
 
-                $('#overlay').html( time );
-
         for (i = 0; i < eegFilenames.length; i++) {
             if (eegVals && eegVals[i]) {
-                var j = Math.floor((time*5)%eegVals.length); // Adjust the time multiplier to speed up/slow down animation
+                var j = Math.floor((time*animMultiplier)%eegVals.length); // Adjust the time multiplier to speed up/slow down animation
                 if (eegVals[i][j]) {
                     eegNodes[i].material.color = new THREE.Color( '0x' + eegGradient.colourAt( eegVals[i][j] ) );
                 }
@@ -334,7 +332,7 @@
 
     $(document).ready( function() {
 
-        var location = window.location.pathname;
+        /*var location = window.location.pathname;
         var path = location.substring(1, location.lastIndexOf('/')+1);
         
         $('#filepick').fileTree({ root: 'eegdata/', script: 'jqueryFileTree/connectors/jqueryFileTree.php', multiFolder: false }, function(file) { 
@@ -342,7 +340,7 @@
             eegFolder = file;
             loadEEGdata();
             eegHalt = false;
-        }, true, path); //True to only show folders
+        }, true, path); //True to only show folders*/
 
         eegInit();
 
@@ -356,10 +354,60 @@
 
 <body>
 
-<div id="eegOverlay">
+<div class="overlay overlayCamera">
+    <a href="#eegcanvas"><img src="icons/front.png" id="eegFrontCamBtn"></a>
+    <a href="#eegcanvas"><img src="icons/left.png" id="eegLeftCamBtn"></a>
+    <a href="#eegcanvas"><img src="icons/right.png" id="eegRightCamBtn"></a>
+    <a href="#eegcanvas"><img src="icons/back.png" id="eegBackCamBtn"></a>
+    <a href="#eegcanvas"><img src="icons/reset.png" id="eegResetCamBtn"></a>
+    <a href="#eegcanvas"><img src="icons/full.png" id="eegFullBtn"></a>
+    <a href="#eegcanvas"><img src="icons/zoomIn.png" id="eegZoomInBtn"></a>
+    <a href="#eegcanvas"><img src="icons/ZoomOut.png" id="eegZoomOutBtn"></a>
 </div>
 
-<div id="eegContainer3D" class="container3D"></div>
+<script type="text/javascript">
+    $('#eegFrontCamBtn').click( function() { //Sets camera to show front
+        eegResetCam();
+        eegCamera.position.set(0,0,55);
+        $.scrollTo( $('#eegContainer3D') );
+    });
+    $('#eegLeftCamBtn').click( function() { //Sets camera to show left side
+        eegResetCam();
+        eegCamera.position.set(55,0,0);
+        $.scrollTo( $('#eegContainer3D') );
+    });
+    $('#eegRightCamBtn').click( function() { //Sets camera to show right side
+        eegResetCam();
+        eegCamera.position.set(-55,0,0);
+        $.scrollTo( $('#eegContainer3D') );
+    });
+    $('#eegBackCamBtn').click( function() { //Sets camera to show back
+        eegResetCam();
+        eegCamera.position.set(0,0,-55);
+        $.scrollTo( $('#eegContainer3D') );
+    });
+    $('#eegResetCamBtn').click( function() { //Set camera back to default position
+        eegResetCam();
+        $.scrollTo( $('#eegContainer3D') );
+    });
+    $('#eegFullBtn').click( function() { //Maximize this panel
+        $('#eeg').toggleClass('fourcol twelvecol');
+        eegCanvasResize();
+        $.scrollTo( $('#eegContainer3D') );
+    });
+    $('#eegZoomInBtn').click( function(e) { //Zoom in
+        eegCamCntrl.zoomin(e);
+        $.scrollTo( $('#eegContainer3D') );
+    });
+    $('#eegZoomOutBtn').click( function(e) { //Zoom out
+        eegCamCntrl.zoomout(e);
+        $.scrollTo( $('#eegContainer3D') );
+    });
+</script>
+
+<div id="eegContainer3D" class="container3D">
+<a name="#eegcanvas"></a>
+</div>
 
 <!-- <div class="example">
     <div id="filepick" class='demo'></div>

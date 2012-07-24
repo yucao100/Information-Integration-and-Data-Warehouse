@@ -90,16 +90,10 @@ UL.jqueryFileTree A:hover {
 .jqueryFileTree LI.ext_xml { background: url(images/code.png) left top no-repeat; }
 .jqueryFileTree LI.ext_zip { background: url(images/zip.png) left top no-repeat; }
 
-/* From the live demo */
+/* From the live demo, modified by Chris Lenk */
 
-.example {
-	float: left;
-	margin: 15px;
-}
-
-.demo {
+.fileselect {
 	width: 200px;
-	height: 400px;
 	border-top: solid 1px #BBB;
 	border-left: solid 1px #BBB;
 	border-bottom: solid 1px #FFF;
@@ -107,4 +101,6 @@ UL.jqueryFileTree A:hover {
 	background: #FFF;
 	overflow: scroll;
 	padding: 5px;
+	position: fixed;
+	right: 10px;
 }

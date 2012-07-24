@@ -81,6 +81,18 @@
 		width: 100%;
 	}
 
+	#loadLink {
+		color: #fff;
+		float: right;
+		margin: 10px 0 0 0;
+		padding: 5px 25px 5px 5px;
+		text-decoration: underline;
+	}
+
+	a:visited {
+		color: #f00;
+	}
+
 	</style>
 
 <script src="mrdoob-three.js-46c0a84\build\Three.js"></script>
@@ -89,6 +101,7 @@
 <script src="jqueryFileTree/jqueryFileTree.js"></script>
 <script src="freqdec-fd-slider-4cd0633/js/fd-slider.js"></script>
 <script src="TrackballControlsCustom.js"></script>
+<script src="jquery.scrollTo-1.4.2-min.js"></script>
 
 <link href="jqueryFileTree/jqueryFileTree.css" rel="stylesheet" type="text/css" media="screen" />
 <link href="styles.css" rel="stylesheet" type="text/css" media="screen" />
@@ -98,13 +111,14 @@
     	var globalClock = new THREE.Clock(); //Main clock to sync all visualizations to
     	var pause = false;
     	var storedTime; //For pausing
+    	animMultiplier = 5; //
 
 		//Scale factor for size of visualization panels
 		visPanelFactor = 0.4;
 
 		//Load the visualization panels
 	    $(document).ready( function() {
-	        /*$.get("kinect.html", {}, function(pgData){
+	        $.get("kinect.html", {}, function(pgData){
 	        	$("#kinect").html(pgData);
 	        });
 	        $.get("ecg.html", {}, function(pgData){
@@ -115,10 +129,37 @@
 	        });
 	        $.get("gait.html", {}, function(pgData){
 	        	$("#gait").html(pgData);
-	        });*/
+	        });
 	        $.get("fall.html", {}, function(pgData){
 	        	$("#fall").html(pgData);
 	        });
+
+	    	$('#filepick').hide();
+
+
+	    	//file loader
+	    	var location = window.location.pathname;
+        	var path = location.substring(1, location.lastIndexOf('/')+1);
+	        $('#filepick').fileTree({ root: 'PatientData/', script: 'jqueryFileTree/connectors/jqueryFileTree.php', multiFolder: false }, function(file) { 
+	                kinectSubfolder = file;
+	                kinectLoadCoords();
+
+		            eegFolder = file;
+		            loadEEGdata();
+
+		            gaitFolderpath = file;
+		            loadGaitData();
+
+		            fallDataFolder = file;
+            		fallLoadData();
+
+            		ecgDataFolder = file;
+            		ecgloadData();
+
+	        }, true, path); //True to only show folders
+
+
+
 
 		    //Kickstart timeline
 		    advanceTime();
@@ -163,10 +204,21 @@
 <div class="container">
 	<div class="row">
 		<div class="twelvecol last">
+			<a href="#"><span id="loadLink"><b>Load</b></span></a>
 			<h1>Data Visualization for Clinical Decision Support</h1>
 		</div>
 	</div>
 </div>
+
+<div class="fileDialog">
+    <div id="filepick" class='fileselect'></div>
+</div>
+
+<script type="text/javascript">
+    $('#loadLink').click( function() { //Toggle the file selection dialog
+        $('#filepick').toggle();
+    });
+</script>
 
 <div class="container">
 	<div class="row">
@@ -191,9 +243,8 @@
 			<p>Four columns</p>
 		</div>
 		<div class="fourcol last">
-			<p>Click and drag to move camera. Hold <b>Z</b> to rotate, <b>X</b> to zoom, or <b>C</b> to pan.<br/>
-			Press <b>1</b> for left view, <b>2</b> for front view, <b>3</b> for right view, or <b>4</b> for back view.<br/>
-			Press <b>Spacebar</b> to revert to the original camera position.</p>
+			<p>Click and drag to move camera.<br/>
+			Press <b>Spacebar</b> to revert all cameras to their original camera positions.</p>
 
 			<p>Uses the Lee Perry-Smith head found <a href="http://www.ir-ltd.net/infinite-3d-head-scan-released/">here</a>.</p>
 		</div>
@@ -204,7 +255,7 @@
 	<div class="row">
 		<!--<div class="twelvecol last">-->
 		<p>
-			<img src="icons/pause.png" id="pause">
+			<a href="#"><img src="icons/pause.png" id="pause"></a>
        		<script>
 				$('#pause').click( function() {
 					toggleTime();

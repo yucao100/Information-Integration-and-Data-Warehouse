@@ -29,7 +29,7 @@ if( file_exists($root . $_POST['dir']) ) {
 		echo "<ul class=\"jqueryFileTree\" style=\"display: none;\">";
 		// All dirs
 		foreach ( $files as $file ) {
-			if ( $file != '.' && $file != '..' && file_exists($root . $_POST['dir'] . $file) ) {
+			if ( $file != '.' && $file != '..' && file_exists($root . $_POST['dir'] . $file) && !file_exists($root . $_POST['dir'] . 'ecg') ) {
 				if (is_dir($root . $_POST['dir'] . $file)) { //dirs
 					echo "<li class=\"directory collapsed\"><a href=\"#\" file=\"" . $file ."\" rel=\"" . htmlentities($_POST['dir'] . $file) . "/\">" . htmlentities($file) . "</a></li>";
 				}

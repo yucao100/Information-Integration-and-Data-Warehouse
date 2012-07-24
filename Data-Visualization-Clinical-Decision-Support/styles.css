@@ -30,7 +30,11 @@
 	width: 100%;
 }
 
+/* If you change either of these min-heights, you must also change the values in visualization's [name]SetCanvasSize() function */
 .container3D canvas {
 	min-height: 233px;
 	width: 100%;
+}
+.twelvecol .container3D canvas {
+	min-height: 450px;
 }
