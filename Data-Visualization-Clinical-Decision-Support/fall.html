@@ -1,28 +1,20 @@
 <html>
 <head>
 
-<!-- <script src="mrdoob-three.js-46c0a84\build\Three.js"></script>
-<script src="jquery-1.7.2.min.js"></script>
-<script src="jqueryFileTree/jqueryFileTree.js"></script>
-<link href="jqueryFileTree/jqueryFileTree.css" rel="stylesheet" type="text/css" media="screen" />
-
-<link href="styles.css" rel="stylesheet" type="text/css" media="screen" /> -->
-
 <script type="text/javascript">
 //By Chris Lenk for UTC REU 2012
-//Don't forget to set variable 'root' in the PHP connector script
 
     var fallCamera;
     var fallCanvas;
     var fallScene;
     var fallRenderer;
     var fallCamCntrl;
-    //Dimensions
-    var fallWidth;// = 600;
-    var fallHeight;// = 500;
+    //Dimensions of the canvas
+    var fallWidth;
+    var fallHeight;
     //Camera variables
     var fallViewAngle = 45;
-    var fallAspect;// = width / height;
+    var fallAspect;
     var fallNear = 0.1;
     var fallFar = 10000;
 
@@ -60,7 +52,7 @@
 
         //Create and start the renderer and add it to the canvas
         fallRenderer = new THREE.WebGLRenderer( {antialias: true} );
-        fallSetCanvasSize(); //renderer.setSize(width, height);
+        fallSetCanvasSize();
         fallRenderer.shadowMapEnabled = true; //Turn on shadows
         fallRenderer.shadowMapSoft = true; //Anti-aliasing
         fallCanvas.appendChild(fallRenderer.domElement);
@@ -122,11 +114,7 @@
     function fallHandleKey(e) {
         if (e.keyCode == 32) { //Spacebar
             fallResetCam();
-        } /*else if (e.keyCode == 38 && fallSpeed < 5000) { //Up Arrow
-            fallSpeed += 100; //Speed up
-        } else if (e.keyCode == 40 && fallSpeed > 0) { //Down Arrow
-            fallSpeed -= 100; //Slow down
-        }*/
+        }
     }
 
     //Puts the camera back at the starting position
@@ -139,8 +127,6 @@
         fallCamera = new THREE.PerspectiveCamera( fallViewAngle, fallAspect, fallNear, fallFar );
         fallScene.add(fallCamera);
         //Pull camera back from its original starting point of (0,0,0)
-        //camera.position.set(200,300,600);
-        //camera.position.set(100,00,500);
         fallCamera.position.set(360,-55,575);
 
         //Controls to move the camera
@@ -154,28 +140,26 @@
     function fallAddLights() {
         //Create a spot light for shadows and add it
         var spotLight = new THREE.SpotLight(0xFFFFFF);
-        spotLight.position.set(0,0,0);
+        spotLight.position.set(0,500,-200);
         spotLight.castShadow = true;
-        //spotLight.shadowCameraVisible = true;
         fallScene.add(spotLight);
 
         //Directional light
-        var frontLight = new THREE.DirectionalLight(0xFFFFFF);
-        frontLight.position.set(0,0,200);
-        //frontLight.castShadow = true;
-        fallScene.add(frontLight);
+        var dirLight = new THREE.DirectionalLight(0xFFFFFF);
+        dirLight.position.set(0,0,200);
+        fallScene.add(dirLight);
 
-        var frontLight2 = new THREE.DirectionalLight(0xFFFFFF);
-        frontLight2.position.set(0,0,-400);
-        fallScene.add(frontLight2);
+        var dirLight2 = new THREE.DirectionalLight(0xFFFFFF);
+        dirLight2.position.set(0,0,-400);
+        fallScene.add(dirLight2);
 
-        var frontLight3 = new THREE.DirectionalLight(0xDDDDDD);
-        frontLight3.position.set(400,0,0);
-        fallScene.add(frontLight3);
+        var dirLight3 = new THREE.DirectionalLight(0xFFFFFF);
+        dirLight3.position.set(400,0,0);
+        fallScene.add(dirLight3);
 
-        var frontLight4 = new THREE.DirectionalLight(0xDDDDDD);
-        frontLight4.position.set(-400,0,0);
-        fallScene.add(frontLight4);
+        var dirLight4 = new THREE.DirectionalLight(0xFFFFFF);
+        dirLight4.position.set(-400,0,0);
+        fallScene.add(dirLight4);
 
         //Ambient lighting
         var ambLight = new THREE.AmbientLight(0xFFFFFF);
@@ -248,30 +232,21 @@
     function fallLoadData() {
         fallActivities = [];
 
-        //for (j = 0; j < kinectFilenames.length; j++) {
-            jQuery.get(fallDataFolder+fallDataFile, function(data) {
-                var dataLines = data.split("\n");
-                //var array = [];
-                for (i = 0; i < dataLines.length; i++) {
-                    //Remove newline if necessary
-                    var str = dataLines[i];
-                    //if (str.charAt(str.length-1) == '\n') {
-                    if (str.match(/[\n\r]$/)) {
-                        str = str.substring(0, str.length-1);
-                    }
-
-                    fallActivities.push( str );
+        jQuery.get(fallDataFolder+fallDataFile, function(data) {
+            var dataLines = data.split("\n");
+            for (i = 0; i < dataLines.length; i++) {
+                //Remove newline if necessary
+                var str = dataLines[i];
+                if (str.match(/[\n\r]$/)) {
+                    str = str.substring(0, str.length-1);
                 }
-                //kinectCoords.push(array);
-            });
-        //}
+
+                fallActivities.push( str );
+            }
+        });
     }
 
     function fallAddObjs() {
-        /*var f = fallAnimFile.replace(/^.*[\\\/]/, ''); //Get just the filename
-        f = f.replace(/.js/, '');
-        f = fallGetActivityName(f);
-        $('#fallActivity').html(f);*/
         var loader = new THREE.JSONLoader(true);
         loader.load ( fallAnimFolder+fallAnimFile+'.js', function (geometry) {
             var material = geometry.materials[ 0 ];
@@ -286,7 +261,6 @@
             fallScene.add(fallPerson);
 
             var f = fallGetActivityName(fallAnimFile);
-            //alert(fallAnimFile);
             $('#fallActivity').html(f);
         } );
     }
@@ -302,11 +276,8 @@
     //Animation Loop
     function fallAnimate() {
         var delta = fallClock.getDelta();
-        //alert(fallClock.getElapsedTime());
 
         var time = $("#timelineForm").val() % fallActivities.length;
-                //$('#fallActivity').html(fallClock.getElapsedTime());
-                //alert(time);
 
         if (fallAnimFile != fallActivities[time]) {
             fallAnimFile = fallActivities[time];
@@ -334,15 +305,6 @@
     }
 
     $(document).ready( function() {
-
-        /*var location = window.location.pathname;
-        var path = location.substring(1, location.lastIndexOf('/')+1);
-        
-        $('#filepick').fileTree({ root: 'fall_detection/', script: 'jqueryFileTree/connectors/jqueryFileTree.php', multiFolder: false }, function(file) { 
-            fallAnimFile = file;
-            fallLoadAnim();
-        }, false, path); //False to show folders AND files*/
-        
         fallInit();
     });
 
@@ -408,17 +370,9 @@
     });
 </script>
 
-<!-- <div class="example">
-    <div id="filepick" class='demo'></div>
-</div> -->
-
 <div id="fallContainer3D" class="container3D">
 <a name="#fallcanvas"></a>
 </div>
-
-<!-- <p>Click and drag to move camera. Hold <b>Z</b> to rotate, <b>X</b> to zoom, or <b>C</b> to pan.</p>
-
-<p>Uses a model created using <a href="http://wiki.blender.org/index.php/Doc:2.4/Tutorials/Animation/BSoD/Character_Animation">this tutorial</a>.</p> -->
 
 </body>
 </html>

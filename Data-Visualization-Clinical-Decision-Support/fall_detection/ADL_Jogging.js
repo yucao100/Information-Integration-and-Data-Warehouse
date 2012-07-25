@@ -21,7 +21,7 @@
 	"DbgName" : "BodyMat",
 	"blending" : "NormalBlending",
 	"colorAmbient" : [0.0, 0.0, 0.0],
-	"colorDiffuse" : [0.2746894732117653, 0.3215179145336151, 0.4629049748182297],
+	"colorDiffuse" : [0.6400000190734865, 0.6400000190734865, 0.6400000190734865],
 	"colorSpecular" : [0.25352928042411804, 0.25352928042411804, 0.25352928042411804],
 	"depthTest" : true,
 	"depthWrite" : true,

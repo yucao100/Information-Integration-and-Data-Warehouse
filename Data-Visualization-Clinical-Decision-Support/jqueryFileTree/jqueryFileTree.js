@@ -30,6 +30,8 @@
 // This plugin is dual-licensed under the GNU General Public License and the MIT License and
 // is copyright 2008 A Beautiful Site, LLC. 
 //
+// Modified by Chris Lenk
+
 if(jQuery) (function($){
 	
 	$.extend($.fn, {
@@ -53,14 +55,6 @@ if(jQuery) (function($){
 					$(c).addClass('wait');
 					$(".jqueryFileTree.start").remove();
 					$.post(o.script, { dir: t, foldersOnly: b, path: p }, function(data) {
-						/*if (data.substring(0,1) == 'x') { //Check for non-data-folder flag
-							data = data.slice(1); 
-							//alert(data);
-							dataAvailable = false;
-						} else {
-							dataAvailable = true;
-							alert('set true');
-						}*/
 						$(c).find('.start').html('');
 						$(c).removeClass('wait').append(data);
 						if( o.root == t ) $(c).find('UL:hidden').show(); else $(c).find('UL:hidden').slideDown({ duration: o.expandSpeed, easing: o.expandEasing });
@@ -79,11 +73,9 @@ if(jQuery) (function($){
 								}
 								$(this).parent().find('UL').remove(); // cleanup
 								var rel = $(this).attr('rel');
-								if (rel.substring(0,1) == 'x') {
+								if (rel.substring(0,1) == 'x') { //Check for no-data-folder flag
 									rel = rel.slice(1); 
-								} /*else {
-
-								}*/
+								}
 								showTree( $(this).parent(), escape(rel.match( /.*\// )) );
 								$(this).parent().removeClass('collapsed').addClass('expanded');
 

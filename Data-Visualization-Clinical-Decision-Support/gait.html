@@ -1,11 +1,6 @@
 <html>
 <head>
 
-<!-- <script src="mrdoob-three.js-46c0a84\build\Three.js"></script>
-<script src="jquery-1.7.2.min.js"></script> 
-
-<link href="styles.css" rel="stylesheet" type="text/css" media="screen" />-->
-
 <script type="text/javascript">
 //By Chris Lenk for UTC REU 2012
 
@@ -14,12 +9,12 @@
     var gaitScene;
     var gaitRenderer;
     var gaitCamCntrl;
-    //Dimensions
-    var gaitWidth;// = 800;
-    var gaitHeight;// = 700;
+    //Dimensions of the canvas
+    var gaitWidth;
+    var gaitHeight;
     //Camera variables
     var gaitViewAngle = 45;
-    var gaitAspect;// = width / height;
+    var gaitAspect;
     var gaitNear = 0.1;
     var gaitFar = 10000;
 
@@ -57,7 +52,7 @@
 
         //Create and start the renderer and add it to the canvas
         gaitRenderer = new THREE.WebGLRenderer( {antialias: true} );
-        gaitSetCanvasSize(); //renderer.setSize(width, height);
+        gaitSetCanvasSize();
         gaitRenderer.shadowMapEnabled = true; //Turn on shadows
         gaitRenderer.shadowMapSoft = true; //Anti-aliasing
         gaitCanvas.appendChild(gaitRenderer.domElement);
@@ -75,7 +70,6 @@
         gaitAddObjs(gaitScene);
         gaitAddLights(gaitScene);
 
-        //alert(speed);
         //Load data from file
         loadGaitData();
         
@@ -133,11 +127,7 @@
     function gaitHandleKey(e) {
         if (e.keyCode == 32) { //Spacebar
             gaitResetCam();
-        }/* else if (e.keyCode == 38 && gaitSpeed < 5000) { //Up Arrow
-            gaitSpeed += 100; //Speed up
-        } else if (e.keyCode == 40 && gaitSpeed > 0) { //Down Arrow
-            gaitSpeed -= 100; //Slow down
-        }*/
+        }
     }
 
     //Puts the camera back at the starting position
@@ -180,13 +170,11 @@
         var spotLight = new THREE.SpotLight(0xFFFFFF);
         spotLight.position.set(300,300,400);
         spotLight.castShadow = true;
-        //spotLight.shadowCameraVisible = true;
         gaitScene.add(spotLight);
 
         //Directional light
         var frontLight = new THREE.DirectionalLight(0x888888);
         frontLight.position.set(400,900,200);
-        //frontLight.castShadow = true;
         gaitScene.add(frontLight);
 
         //Ambient lighting
@@ -201,16 +189,6 @@
         //Update gaitPerson to correct keyframe
         if (gaitPerson) {
             gaitPerson.updateAnimation( gaitSpeed * delta );
-            //$('#distTraveled').html(gaitPerson.currentKeyframe);
-            
-            //Update number of steps taken
-                    /*Need to know on which keyframes the model makes a footstep
-                    Keyframes in Three.js start from 0 but in Blender from 1*/
-            //Assume the footsteps are on the first frame and the middle frame (first one foot and then the other)
-            /*if (gaitPerson.currentKeyframe == 0 || gaitPerson.currentKeyframe == (gaitPerson.length / 2) - 1) {
-                steps++;
-                $('#numSteps').html(steps);
-            }*/
         }
 
         gaitCanvasResize();
@@ -295,8 +273,6 @@
 <div id="gaitContainer3D" class="container3D">
 <a name="#gaitcanvas"></a>
 </div>
-
-<!-- <p>Click and drag to move camera. Hold <b>Z</b> to rotate, <b>X</b> to zoom, or <b>C</b> to pan.</p> -->
 
 </body>
 </html>

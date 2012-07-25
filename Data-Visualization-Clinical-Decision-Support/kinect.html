@@ -1,26 +1,20 @@
 <html>
 <head>
 
-<!-- <script src="mrdoob-three.js-46c0a84\build\Three.js"></script>
-<script src="jquery-1.7.2.min.js"></script>
-<script src="jqueryFileTree/jqueryFileTree.js"></script>
-<link href="jqueryFileTree/jqueryFileTree.css" rel="stylesheet" type="text/css" media="screen" /> -->
-
 <script type="text/javascript">
 //By Chris Lenk for UTC REU 2012
-//Don't forget to set variable 'root' in the PHP connector script
 
     var kinectCamera;
     var kinectCanvas;
     var kinectScene;
     var kinectRenderer;
     var kinectCamCntrl;
-    //Dimensions
-    var kinectWidth;// = 800;//window.innerWidth;
-    var kinectHeight;// = 700;//window.innerHeight;
+    //Dimensions of the canvas
+    var kinectWidth;
+    var kinectHeight;
     //Camera variables
     var kinectViewAngle = 45;
-    var kinectAspect;// = width / height;
+    var kinectAspect;
     var kinectNear = 0.1;
     var kinectFar = 10000;
     kinectFPS = 12;
@@ -88,7 +82,7 @@
 
         //Create and start the renderer and add it to the canvas
         kinectRenderer = new THREE.WebGLRenderer( {antialias: true} );
-        kinectSetCanvasSize(); //kinectRenderer.setSize(kinectWidth, kinectHeight);
+        kinectSetCanvasSize();
         kinectRenderer.shadowMapEnabled = true; //Turn on shadows
         kinectRenderer.shadowMapSoft = true; //Anti-aliasing
         kinectCanvas.appendChild(kinectRenderer.domElement);
@@ -115,7 +109,6 @@
         kinectLoadCoords();
         
         //kickstart animation
-        //kinectAnimate(new Date().getTime());//
         kinectAnimate(globalClock.getElapsedTime());
     }
 
@@ -166,11 +159,7 @@
     function kinectHandleKey(e) {
         if (e.keyCode == 32) { //Spacebar
             kinectResetCam();
-        } /*else if (e.keyCode == 38 && kinectSpeed < 5000) { //Up Arrow
-            kinectSpeed += 100; //Speed up
-        } else if (e.keyCode == 40 && kinectSpeed > 0) { //Down Arrow
-            kinectSpeed -= 100; //Slow down
-        }*/
+        }
     }
 
     //Puts the camera back at the starting position
@@ -187,7 +176,7 @@
 
         //Controls to move the camera
         kinectCamCntrl = new THREE.TrackballControlsCustom(kinectCamera, kinectRenderer.domElement);
-        kinectCamCntrl.keys = [kinectROT, kinectZOOM, kinectPAN]; //rotate, zoom, pan
+        kinectCamCntrl.keys = [kinectROT, kinectZOOM, kinectPAN];
 
         //Keyboard listener
         document.addEventListener("keydown", kinectHandleKey, false);
@@ -261,18 +250,10 @@
     }
 
     function kinectAddLights() {
-        /*//Create a point light and add it
-        var ptLight = new THREE.PointLight(0xFFFFFF);
-        ptLight.position.x = 10;
-        ptLight.position.y = 50;
-        ptLight.position.z = 100;
-        scene.add(ptLight);*/
-
         //Create a spot light for shadows and add it
         var spotLight = new THREE.SpotLight(0xFFFFFF);
         spotLight.position.set(10,300,-400);
         spotLight.castShadow = true;
-        //spotLight.shadowCameraVisible = true;
         kinectScene.add(spotLight);
 
         //Directional light
@@ -327,7 +308,6 @@
         //Update kinect node locations
         for (i = 0; i < kinectFilenames.length; i++) {
             if (kinectCoords && kinectCoords[i]) {
-                //var j = Math.floor((time/100)%kinectCoords[0].length); //divide by 100 to slow it down
                 var j = $("#timelineForm").val();
                 if (kinectCoords[i][j]) {
                     kinectNodes[i].position.x = kinectCoords[i][j][0]*100;
@@ -355,38 +335,15 @@
     }
 
     $(document).ready( function() {
-
-        /*var location = window.location.pathname;
-        var path = location.substring(1, location.lastIndexOf('/')+1);
-        
-        $('#filepick').fileTree({ root: 'PatientData/', script: 'jqueryFileTree/connectors/jqueryFileTree.php', multiFolder: false }, function(file) { 
-
-                kinectHalt = true;
-                kinectSubfolder = file;
-                kinectLoadCoords();
-                kinectHalt = false;
-
-        }, true, path); //True to only show folders*/
-        
         kinectInit();
     });
 
 </script>
 
-<style type="text/css">
-    /*body {
-        background-color: #000;
-        color: #FFF;
-    }*/
-</style>
 </head>
 
 
 <body>
-
-<!-- <div class="example">
-    <div id="filepick" class='demo'></div>
-</div> -->
 
 <div class="overlay overlayCamera">
     <a href="#kinectcanvas"><img src="icons/front.png" id="kinectFrontCamBtn"></a>
@@ -407,12 +364,12 @@
     });
     $('#kinectLeftCamBtn').click( function() { //Sets camera to show left side
         kinectResetCam();
-        kinectCamera.position.set(300,0,0);
+        kinectCamera.position.set(-300,0,0);
         $.scrollTo( $('#kinectContainer3D') );
     });
     $('#kinectRightCamBtn').click( function() { //Sets camera to show right side
         kinectResetCam();
-        kinectCamera.position.set(-300,0,0);
+        kinectCamera.position.set(300,0,0);
         $.scrollTo( $('#kinectContainer3D') );
     });
     $('#kinectBackCamBtn').click( function() { //Sets camera to show back
@@ -442,8 +399,6 @@
 <div id="kinectContainer3D" class="container3D">
 <a name="#kinectcanvas"></a>
 </div>
-
-<!--<p>Click and drag to move camera. Hold <b>Z</b> to rotate, <b>X</b> to zoom, or <b>C</b> to pan.</p>-->
 
 </body>
 </html>

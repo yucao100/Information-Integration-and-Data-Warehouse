@@ -18,82 +18,6 @@
 	
 	<!--css3-mediaqueries-js - http://code.google.com/p/css3-mediaqueries-js/ - Enables media queries in some unsupported browsers-->
 	<script type="text/javascript" src="1140_CssGrid_2/js/css3-mediaqueries.js"></script>
-	
-	<!--Delete embedded styles, just for example.-->
-	<style type="text/css">
-	
-	body {
-	font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-	}
-	
-	.container h1 {
-		color: #fff;
-		background: #000;
-		margin: 10px 0 0 0;
-		padding: 5px 5px 5px 25px;
-		font-size: 1.15em;
-	}
-
-	.container p {
-		color: #fff;
-		/*line-height: 100px;*/
-		background: #000;
-		text-align: center;
-		margin: 10px 0 0 0;
-		padding: 5px;
-	}
-
-	.container .container3D {
-		margin: 10px 0 0 0;
-		/*height: 500px;
-		height: 50%;
-		max-height: 500px;*/
-	}
-
-	#timeline {
-		position: fixed;
-		bottom: 5px;
-		right:0;
-		left:0;
-		/*padding: 0px;*/
-		margin: 0px;
-		/*width: 100%;*/
-	}
-
-	#timeline p {
-		padding-left: 10px;
-		padding-right: 10px;
-	}
-	
-	.row {
-		/*min-height: 1px;*/
-	}
-
-	.bottom {
-		margin-bottom: 80px;
-	}
-
-	.body {
-		/*height: 100%;*/
-	}
-
-	input[type="range"] {
-		width: 100%;
-	}
-
-	#loadLink {
-		color: #fff;
-		float: right;
-		margin: 10px 0 0 0;
-		padding: 5px 25px 5px 5px;
-		text-decoration: underline;
-	}
-
-	a:visited {
-		color: #f00;
-	}
-
-	</style>
 
 <script src="mrdoob-three.js-46c0a84\build\Three.js"></script>
 <script src="jquery-1.7.2.min.js"></script>
@@ -135,19 +59,15 @@
 	        	$("#fall").html(pgData);
 	        });
 
+	        //Hide the file picker and credits
 	    	$('#filepick').hide();
-
+	    	$('#credits').hide();
 
 	    	//file loader
 	    	var location = window.location.pathname;
         	var path = location.substring(1, location.lastIndexOf('/')+1);
 	        $('#filepick').fileTree({ root: 'PatientData/', script: 'jqueryFileTree/connectors/jqueryFileTree.php', multiFolder: false }, function(file) { 
-	        		//alert(file);
-	        		//alert('trying loading');
-	        		//if (dataAvailable) {
 	        		if (file.substring(0,1) != 'x') { //Check for non-data-folder flag
-	        			//file = file.slice(1);
-
 	        			//Load all the data for all the visualizations
 		                kinectSubfolder = file;
 		                kinectLoadCoords();
@@ -163,8 +83,6 @@
 
 	            		ecgDataFolder = file;
 	            		ecgloadData(replaceTimeline); //when it's done loading, replace the timeline
-
-
 	        		}
 
 	        }, true, path); //True to only show folders
@@ -274,18 +192,82 @@
 		</div>
 		<div class="fourcol" id="gait">
 		</div>
-		<div class="fourcol last">
-			<p>Click and drag to move camera.<br/>
-			Press <b>Spacebar</b> to revert all cameras to their original camera positions.</p>
+		<div class="fourcol last" id="notesContainer">
+			<span id="notes">
+				<p>Click and drag to move camera.<br/><br/>
+				Press <b>Spacebar</b> to revert all cameras to their original camera positions.<br/><br/>
+				<span id="creditsLink"><a href="#">Credits</a></span></p>
+			</span>
+			<span id="credits"><p>
+				Developed by Chris Lenk, under direction from Dr. Yu Cao at the University of Tennessee in Chattanooga during the summer of 2012.<br/><br/>
 
-			<p>Uses the Lee Perry-Smith head found <a href="http://www.ir-ltd.net/infinite-3d-head-scan-released/">here</a>.</p>
+				This app uses the following frameworks and libraries:<br/>
+				- <a href="http://webgl.org/">WebGL</a> - low-level 3D graphics API<br/>
+				- <a href="http://mrdoob.github.com/three.js/">Three.js</a> - 3D library that makes working with WebGL a lot easier<br/>
+				- <a href="http://jquery.com/">jQuery</a> - very useful JavaScript library<br/>
+				- <a href="http://github.com/anomal/RainbowVis-JS/">RainbowVis</a> - library for color gradients, used in EEG visualization<br/>
+				- <a href="http://abeautifulsite.net/blog/2008/03/jquery-file-tree/">jQuery File Tree</a> - jQuery plugin for file selection<br/>
+				- <a href="http://github.com/freqdec/fd-slider/">FD-Slider</a> - HTML5 range element polyfill, used for the timeline slider<br/>
+				- <a href="http://flesler.blogspot.com/2007/10/jqueryscrollto.html">jQuery ScrollTo</a> - jQuery plugin for scrolling to particular part of the page<br/>
+				- <a href="http://cssgrid.net/">1140 CSS Grid</a> - Fluid grid layout<br/><br/>
+
+				The following Three.js tutorials were used to learn the library, and some of my code is based off of them:<br/>
+				- <a href="http://aerotwist.com/tutorials/getting-started-with-three-js/">Getting Started With Three.js</a> by Paul Lewis<br/>
+				- <a href="http://fhtr.org/BasicsOfThreeJS/">Basics of Three.js</a> by Ilmari Heikkinen<br/>
+				- <a href="http://learningthreejs.com/blog/2012/01/20/casting-shadows/">Casting Shadows</a> by Jerome Etienne<br/>
+				- <a href="http://learningthreejs.com/blog/2011/08/30/window-resize-for-your-demos/">Window Resize for Your Demos</a> by Jerome Etienne<br/>
+				- <a href="http://96methods.com/2012/02/three-js-importing-a-model/">Three.js: Importing a Model</a> by Graham Blake<br/>
+				- <a href="http://kadrmasconcepts.com/blog/2011/06/06/three-js-blender-2-5-ftw/">Three.js + Blender 2.5 = FTW</a> <br/>
+				- <a href="http://kadrmasconcepts.com/blog/2011/06/08/three-js-blender-part-2/">Three.js + Blender Part 2</a><br/>
+				- <a href="http://kadrmasconcepts.com/blog/2012/01/24/from-blender-to-threefab-exporting-three-js-morph-animations/">From Blender to Threefab. Exporting three.js morph animations</a><br/>
+				- <a href="http://catchvar.com/threejs-animating-blender-models/">Three.js - Animating Blender Models</a><br/>
+				- The many examples at the <a href="http://mrdoob.github.com/three.js/">official Three.js site</a><br/><br/>
+
+				The following Blender tutorials were used to learn basic 3D modeling and to create the models in the app:<br/>
+				- <a href="http://cgcookie.com/blender/get-started-with-blender/">Get Started With Blender</a><br/>
+				- <a href="http://en.wikibooks.org/wiki/Blender_3D:_Noob_to_Pro/">Blender 3D: Noob to Pro</a><br/>
+				- <a href="http://liquidblue.com.br/2010/11/01/modelling-a-simple-heart-in-blender-2-54/">Modelling a simple heart in Blender 2.54</a> by Sergio Moura<br/>
+				- <a href="http://wiki.blender.org/index.php/Doc:2.6/Manual/Your_First_Animation/1.A_static_Gingerbread_Man/">Your First Animation in 30 plus 30 Minutes Part I</a><br/>
+				- <a href="http://wiki.blender.org/index.php/Doc:2.4/Tutorials/Animation/BSoD/Character_Animation/">Blender Summer of Documentation Character Animation tutorial</a><br/><br/>
+
+				The app also uses the <a href="http://ir-ltd.net/infinite-3d-head-scan-released/">head model released by Lee Perry-Smith</a><br/><br/>
+
+				<a href="#" id="creditsClose">Close</a>
+			</p></span>
 		</div>
 	</div>
 </div>
 
+<script>
+	//Toggle the credits dialog
+	$('#creditsLink').click( function() {
+		$('#kinect').toggle();
+		$('#ecg').toggle();
+		$('#eeg').toggle();
+		$('#fall').toggle();
+		$('#gait').toggle();
+
+		$('#notes').hide();
+		$('#credits').show();
+		
+        $('#notesContainer').toggleClass('fourcol twelvecol');
+	});
+	$('#creditsClose').click( function() {
+		$('#kinect').toggle();
+		$('#ecg').toggle();
+		$('#eeg').toggle();
+		$('#fall').toggle();
+		$('#gait').toggle();
+
+		$('#notes').show();
+		$('#credits').hide();
+
+        $('#notesContainer').toggleClass('fourcol twelvecol');
+	});
+</script>
+
 <div class="container" id="timeline">
 	<div class="row">
-		<!--<div class="twelvecol last">-->
 		<p>
 			<a href="#"><img src="icons/pause.png" id="pause"></a>
        		<script>
@@ -293,16 +275,11 @@
 					toggleTime();
 				});
 			 </script>
-       		<!-- <input name="html5shim-1" id="html5shim-1" type="range" min="0" max="100" step="0.20" title="Timeline" value="0.0" /> -->
-       		<input type="text" name="timelineForm" id="timelineForm" value="0" />
-       		<script>
-			 </script>
-       	</p>
 
-		<!--</div>-->
+       		<input type="text" name="timelineForm" id="timelineForm" value="0" />
+       	</p>
 	</div>
 </div>
-
 
 </body>
 

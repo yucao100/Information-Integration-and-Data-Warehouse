@@ -1,11 +1,6 @@
 <html>
 <head>
 
-<!-- <script src="mrdoob-three.js-46c0a84\build\Three.js"></script>
-<script src="jquery-1.7.2.min.js"></script> -->
-
-<!--<link href="styles.css" rel="stylesheet" type="text/css" media="screen" />-->
-
 <script type="text/javascript">
 //By Chris Lenk for UTC REU 2012
 
@@ -14,12 +9,12 @@
     var ecgCanvas;
     var ecgRenderer;
     var ecgCamCntrl;
-    //Dimensions
-    var ecgWidth;// = 800;
-    var ecgHeight;// = 700;
+    //Dimensions of the canvas
+    var ecgWidth;
+    var ecgHeight;
     //Camera variables
     var ecgViewAngle = 45;
-    var ecgAspect;// = width / height;
+    var ecgAspect;
     var ecgNear = 0.1;
     var ecgFar = 10000;
 
@@ -54,7 +49,7 @@
 
         //Create and start the renderer and add it to the canvas
         ecgRenderer = new THREE.WebGLRenderer( {antialias: true} );
-        ecgSetCanvasSize(); //renderer.setSize(width, height);
+        ecgSetCanvasSize();
         ecgRenderer.shadowMapEnabled = true; //Turn on shadows
         ecgRenderer.shadowMapSoft = true; //Anti-aliasing
         ecgCanvas.appendChild(ecgRenderer.domElement);
@@ -116,11 +111,7 @@
     function ecgHandleKey(e) {
         if (e.keyCode == 32) { //Spacebar
             ecgResetCam();
-        } /*else if (e.keyCode == 38 && ecgSpeed < 5000) { //Up Arrow
-            ecgSpeed += 100; //Speed up
-        } else if (e.keyCode == 40 && ecgSpeed > 0) { //Down Arrow
-            ecgSpeed -= 100; //Slow down
-        } */
+        }
     }
 
     //Puts the camera back at the starting position
@@ -133,7 +124,7 @@
         ecgCamera = new THREE.PerspectiveCamera( ecgViewAngle, ecgAspect, ecgNear, ecgFar );
         ecgScene.add(ecgCamera);
         //Pull camera back from its original starting point of (0,0,0)
-        ecgCamera.position.set(30,40,25); //try multiples of 6,8,5
+        ecgCamera.position.set(30,40,25);
 
         //Controls to move the camera
         ecgCamCntrl = new THREE.TrackballControlsCustom(ecgCamera, ecgRenderer.domElement);
@@ -162,13 +153,11 @@
         var spotLight = new THREE.SpotLight(0xFFFFFF);
         spotLight.position.set(300,300,400);
         spotLight.castShadow = true;
-        //spotLight.shadowCameraVisible = true;
         ecgScene.add(spotLight);
 
         //Directional light
         var frontLight = new THREE.DirectionalLight(0x888888);
         frontLight.position.set(400,900,200);
-        //frontLight.castShadow = true;
         ecgScene.add(frontLight);
 
         //Ambient lighting
@@ -203,7 +192,6 @@
 
         //Update heart to correct keyframe
         if (heart) {
-            //alert(delta);
             heart.updateAnimation( speed * delta );
         }
 
@@ -223,7 +211,6 @@
     });
 
 </script>
-
 
 </head>
 
@@ -288,8 +275,6 @@
 <div id="ecgContainer3D" class="container3D">
 <a name="#ecgcanvas"></a>
 </div>
-
-<!--<p>Click and drag to move camera. Hold <b>Z</b> to rotate, <b>X</b> to zoom, or <b>C</b> to pan.</p>-->
 
 </body>
 </html>
