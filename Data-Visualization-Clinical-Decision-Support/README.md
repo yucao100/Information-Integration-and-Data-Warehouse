@@ -16,7 +16,7 @@ Contents
 I. Project Description
 ----------------------
 
-The goal of the Data Visualization for Clinical Decision Support project is to an effective, efficient, and intuitive way to present various biomedical data. The way we chose to do this was to create a web application that can be used on desktop or mobile platforms. This software is intended to allow doctors and therapists to more easily make decisions regarding their patients, based on these visualizations.
+The goal of the Data Visualization for Clinical Decision Support project is to be an effective, efficient, and intuitive way to present various biomedical data. The way we chose to do this was to create a web application that can be used on desktop or mobile platforms. This software is intended to allow doctors and therapists to more easily make decisions regarding their patients, based on these visualizations.
 
 II. Requirements
 ----------------
@@ -30,7 +30,17 @@ These instructions will get the app ready on a localhost so you can modify and u
 
 To get the files, go to https://github.com/yucao100/Information-Integration-and-Data-Warehouse and click on "Downloads" to download them in a .zip or .tar.gz file, or use the 'git clone' command in the git shell. You will need to extract or clone the files to the root directory of your web server. The github repository includes other projects, but this readme file deals only with the Data Visualization project. All the files associated with this project are located in the 'Data-Visualization-Clinical-Decision-Support' subfolder. On my setup for example, I would type `git clone git@github.com:yucao100/Information-Integration-and-Data-Warehouse.git C:\wamp\www` in the git shell. This allows me to access the web app by typing "http://localhost/Data-Visualization-Clinical-Decision-Support/" into my browser.
 
-When you open the web app, you are presented with 5 panels, each containing a visualization of a different kind of data. The first looks like a skeleton and visualizes motion recorded with the Kinect. The second, showing a beating heart, visualizes heartrate data captured with ECG. The third displays a head with several colored spots on it, and visualizes brain activity captured with EEG. Next, an animated model visualizes fall detection and ADL detection captured by a smartphone app. Finally, we visualize walking speed with a running figure.
+When you open the web app, you are presented with 5 panels, each containing a visualization of a different kind of data. The first looks like a stick figure and visualizes motion recorded with the Kinect. The Kinect tracks 20 points on a person, together making up a skeleton. Each of these 20 points has a series of x, y, and z coordinates that track its position through time. Our visualization renders a sphere for each point, and renders a number of lines connecting them to look like a stick figure. As the points change position, the lines follow them, and the stick figure performs the movements recorded by the Kinect.
+
+The second, showing a beating heart, visualizes heart rate data captured with ECG. Each ECG data file consists of a series of beats per minute (BPM) values. The model of a heart beats faster or slower depending on the loaded data, and the actual BPM values are also displayed.
+
+The third panel displays a head with several colored spots on it, and visualizes brain activity captured with EEG. This visualization is intended to be used with the [Emotiv EPOC neuroheadset](http://www.emotiv.com/store/hardware/epoc-bci/epoc-neuroheadset/), which records EEG data from 14 different points on the patient's head. Each point on the EPOC headset corresponds to a node on the 3D model of a head, and the color of each one varies according to the value of the EEG data. The color range is a rainbow, with low values being visualized as red and high values as blue. The data is loaded from files, one for each EPOC point, which contain the sequence of values for that node.
+
+Note that the app could easily be changed to work with any other EEG headset. The number and location of nodes on the head model would require modification in eeg.html. Also, adjustments would need to be made to the number of data files in the /PatientData/ subfolders.
+
+Next, an animated model visualizes fall detection and ADL detection captured by a smartphone app. The data for this visualization consists of a sequence of activity codes. When each code is loaded, the corresponding activity is animated and the model is shown performing that activity. Additionally, the kind of activity is displayed in text to avoid ambiguity.
+
+Finally, we visualize walking speed with a model of a running figure. A single value for distance traveled and a single value for average walking speed are loaded and output in a textual format. The speed of the walking animation is then adjusted accordingly, so that it speeds up with higher average speed values and slows down for the opposite.
 
 Each panel has a number of buttons along the side that let you adjust the view of that particular visualization. In order from top to bottom, they:
 * Change the camera to a front view
@@ -38,7 +48,7 @@ Each panel has a number of buttons along the side that let you adjust the view o
 * Change the camera to a right view
 * Change the camera to a rear view
 * Revert the camera to its original position
-* Enlarge the panel to take up the majority of the screen (click the buttom again to make it revert to its normal size)
+* Enlarge the panel to take up the majority of the screen (click the button again to make it revert to its normal size)
 * Zoom in the camera
 * Zoom out the camera
 
@@ -48,7 +58,7 @@ At the bottom of the page is a timeline slider, which shows what point in the se
 
 To edit the files just edit the HTML, JavaScript, CSS, and PHP files in your favorite editor. All the data files are just normal .txt files so they are easy to modify as well.
 
-The 3D models were created in Blender (a free 3D modeling program for Windows, Mac, and Linux available at blender.org) and exported using the Three.js plugin. There are lots of Blender tutorials online, and the ones I used while during development are listed in the Acknowledgments section. Instructions for installing the import/export plugin can be found [here](https://github.com/mrdoob/three.js/issues/143) or in its readme. If a model doesn't look right in Three.js after you export it, change the settings when you export it. Make sure "Flip YZ" is checked, or your model may end up on its side. If the model is too small in Three.js, change the "Scale" value when you export. Check "Colors" and/or "Materials" to carry the colors/materials you used in Blender over into Three.js. If the model is to be animated, be sure to check "Animation," otherwise leave it unchecked to make the file smaller.
+The 3D models were created in [Blender](http://www.blender.org/) (a free 3D modeling program for Windows, Mac, and Linux) and exported using the Three.js plugin. There are lots of Blender tutorials online, and the ones I used while during development are listed in the Acknowledgments section. Instructions for installing the import/export plugin can be found [here](https://github.com/mrdoob/three.js/issues/143) or in its readme. If a model doesn't look right in Three.js after you export it, change the settings when you export it. Make sure "Flip YZ" is checked, or your model may end up on its side. If the model is too small in Three.js, change the "Scale" value when you export. Check "Colors" and/or "Materials" to carry the colors/materials you used in Blender over into Three.js. If the model is to be animated, be sure to check "Animation," otherwise leave it unchecked to make the file smaller.
 
 IV. Files Manifest
 ------------------
@@ -86,7 +96,7 @@ IV. Files Manifest
 * README.md - This readme file.
 
 V. Bugs and Unfinished Features
--------------------------------------------------
+-------------------------------
 
 * If you pause the timeline, drag the slider to a new position, and unpause it, the slider will snap to the location it was paused at. It should instead unpause from the new location you dragged it to.
 * Sometimes the Kinect data doesn't load correctly the first time, and lines are drawn between incorrect nodes. Usually reloading the data set fixes the issue. This bug requires further investigation.
@@ -101,7 +111,7 @@ V. Bugs and Unfinished Features
 * Most of the JS and CSS have not been minified yet.
 
 VI. Acknowledgments
--------------------------------------------------
+-------------------
 
 Developed by Chris Lenk, under direction from Dr. Yu Cao at the University of Tennessee in Chattanooga during the summer of 2012.
 
