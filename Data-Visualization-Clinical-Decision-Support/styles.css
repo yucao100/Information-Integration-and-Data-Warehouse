@@ -1,0 +1,101 @@
+/* Based on the 1140 Grid Demo styles */
+
+body {
+font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+.container h1 {
+	color: #fff;
+	background: #000;
+	margin: 10px 0 0 0;
+	padding: 5px 5px 5px 25px;
+	font-size: 1.15em;
+}
+
+.container p {
+	color: #fff;
+	background: #000;
+	text-align: center;
+	margin: 10px 0 0 0;
+	padding: 5px;
+}
+
+.container .container3D {
+	margin: 10px 0 0 0;
+}
+
+.container #credits p {
+    margin-left: auto;
+    margin-right: auto;
+    width: 60%;
+    text-align: left;
+}
+
+#creditsClose {
+	display: block;
+	text-align: center;
+}
+
+#timeline {
+	position: fixed;
+	bottom: 5px;
+	right:0;
+	left:0;
+	margin: 0px;
+}
+
+#timeline p {
+	padding-left: 10px;
+	padding-right: 10px;
+}
+
+.bottom {
+	margin-bottom: 80px;
+}
+
+input[type="range"] {
+	width: 100%;
+}
+
+#loadLink {
+	color: #fff;
+	float: right;
+	margin: 10px 0 0 0;
+	padding: 5px 25px 5px 5px;
+	text-decoration: underline;
+}
+
+a:visited {
+	color: #f00;
+}
+
+.overlay {
+	position: absolute;
+	margin-top: 15px;
+	color: #FFF;
+	text-align: center;
+}
+
+.overlayText { /* For putting text on a visualization panel */
+	margin-left: 40px;
+}
+
+.overlayCamera { /* For camera buttons on a visualization panel */
+	margin-left: 10px;
+	width: 23px;
+}
+
+.container3D {
+	height: 100%;
+	width: 100%;
+}
+
+/* If you change either of these min-heights, you must also change the values in visualization's [name]SetCanvasSize() function */
+.container3D canvas {
+	min-height: 233px;
+	width: 100%;
+}
+.twelvecol .container3D canvas {
+	min-height: 450px;
+}
+

@@ -1,0 +1,378 @@
+<html>
+<head>
+
+<script type="text/javascript">
+//By Chris Lenk for UTC REU 2012
+
+    var fallCamera;
+    var fallCanvas;
+    var fallScene;
+    var fallRenderer;
+    var fallCamCntrl;
+    //Dimensions of the canvas
+    var fallWidth;
+    var fallHeight;
+    //Camera variables
+    var fallViewAngle = 45;
+    var fallAspect;
+    var fallNear = 0.1;
+    var fallFar = 10000;
+
+    var fallPerson;
+    var fallClock = new THREE.Clock();
+
+    var fallDataFolder = '/Data-Visualization-Clinical-Decision-Support/PatientData/Default/';
+    var fallDataFile = 'fall/data.txt';
+    var fallAnimFolder = '/Data-Visualization-Clinical-Decision-Support/fall_detection/';
+    var fallAnimFile = 'INACTIVE';
+
+    var fallActivities = []; //Array of activities in currently loaded data sample 
+
+    //Keys
+    fallROT = 90;
+    fallZOOM = 88;
+    fallPAN = 67;
+
+    fallFPS = 12;
+    var fallBLENDERSCALE = 15;
+    var fallHalt = false; //True stops the animation
+    var fallAnimOffset = 0; //Starting morphTarget in the animation
+    var fallDuration = 1667; //in ms
+    var fallKeyframes = 40;
+    var fallInterpolation = fallDuration / fallKeyframes;
+    var fallLastKeyframe = 0;
+    var fallCurrentKeyframe = 0;
+
+    var fallSpeed = 800;
+
+    //Initializes the scene
+    function fallInit() {
+        //Get canvas container3D
+        fallCanvas = document.getElementById("fallContainer3D");
+
+        //Create and start the renderer and add it to the canvas
+        fallRenderer = new THREE.WebGLRenderer( {antialias: true} );
+        fallSetCanvasSize();
+        fallRenderer.shadowMapEnabled = true; //Turn on shadows
+        fallRenderer.shadowMapSoft = true; //Anti-aliasing
+        fallCanvas.appendChild(fallRenderer.domElement);
+        
+        //Create camera and scene
+        fallScene = new THREE.Scene();
+        fallAddCamera();
+
+        //Disable text cursor on the canvas
+        fallCanvas.onselectstart = function() {
+            return false;
+        }
+
+        //Add stuff to the scene
+        fallAddObjs(fallScene);
+        fallAddLights(fallScene);
+        
+        //Draw it
+        fallRenderer.setClearColorHex(0x000000, 1.0);
+        fallRenderer.clear(); //Sets the background color
+        fallRenderer.render(fallScene, fallCamera);
+
+        //Set up keyboard listener
+        document.addEventListener("keydown", fallHandleKey, false);
+
+        //Load the default data
+        fallLoadData();
+        
+        //kickstart animation
+        fallAnimate();
+    }
+
+    //Updates the canvas size on window resize
+    //Uses solution from WestLangley: https://github.com/mrdoob/three.js/issues/1406#issuecomment-4207064
+    //And here: http://learningthreejs.com/data/THREEx/docs/THREEx.WindowResize.html
+    function fallCanvasResize() {
+        if (fallCanvas) {
+            fallSetCanvasSize();
+            //Adjust the camera so objects look the same when resizing
+            fallCamera.aspect = fallWidth / fallHeight;
+            fallCamera.updateProjectionMatrix();
+        }
+    }
+
+    function fallSetCanvasSize() {
+        fallWidth = fallCanvas.clientWidth;
+        fallHeight = $(window).height() * visPanelFactor;
+
+        //JavaScript equivalent of min-height CSS
+        if ($('#fall').hasClass('twelvecol')) {
+            fallHeight = 450;
+        } else if (fallHeight < 233) {
+            fallHeight = 233;
+        }
+
+        fallRenderer.setSize(fallWidth, fallHeight);
+    }
+
+    function fallHandleKey(e) {
+        if (e.keyCode == 32) { //Spacebar
+            fallResetCam();
+        }
+    }
+
+    //Puts the camera back at the starting position
+    function fallResetCam() {
+        fallScene.remove(fallCamera);
+        fallAddCamera();
+    }
+
+    function fallAddCamera() {
+        fallCamera = new THREE.PerspectiveCamera( fallViewAngle, fallAspect, fallNear, fallFar );
+        fallScene.add(fallCamera);
+        //Pull camera back from its original starting point of (0,0,0)
+        fallCamera.position.set(360,-55,575);
+
+        //Controls to move the camera
+        fallCamCntrl = new THREE.TrackballControlsCustom(fallCamera, fallRenderer.domElement);
+        fallCamCntrl.keys = [fallROT, fallZOOM, fallPAN]; //rotate, zoom, pan
+
+        //Reset the camera when spacebar pressed
+        document.addEventListener("keydown", fallResetCam, false);
+    }
+
+    function fallAddLights() {
+        //Create a spot light for shadows and add it
+        var spotLight = new THREE.SpotLight(0xFFFFFF);
+        spotLight.position.set(0,500,-200);
+        spotLight.castShadow = true;
+        fallScene.add(spotLight);
+
+        //Directional light
+        var dirLight = new THREE.DirectionalLight(0xFFFFFF);
+        dirLight.position.set(0,0,200);
+        fallScene.add(dirLight);
+
+        var dirLight2 = new THREE.DirectionalLight(0xFFFFFF);
+        dirLight2.position.set(0,0,-400);
+        fallScene.add(dirLight2);
+
+        var dirLight3 = new THREE.DirectionalLight(0xFFFFFF);
+        dirLight3.position.set(400,0,0);
+        fallScene.add(dirLight3);
+
+        var dirLight4 = new THREE.DirectionalLight(0xFFFFFF);
+        dirLight4.position.set(-400,0,0);
+        fallScene.add(dirLight4);
+
+        //Ambient lighting
+        var ambLight = new THREE.AmbientLight(0xFFFFFF);
+        fallScene.add(ambLight);
+    }
+
+    function fallGetActivityName( name ) {
+        switch (name) {
+            //var f = '';
+            case 'INACTIVE':
+                return 'No Activity';
+                break;
+            case 'ADL_Bending':
+                return 'ADL - Bending';
+                break;
+            case 'ADL_Cough':
+                return 'ADL - Coughing or Sneezing';
+                break;
+            case 'ADL_Jogging':
+                return 'ADL - Jogging';
+                break;
+            case 'ADL_Sitting':
+                return 'ADL - Sitting';
+                break;
+            case 'ADL_Squat':
+                return 'ADL - Squatting';
+                break;
+            case 'ADL_WalkingForward':
+                return 'ADL - Walking Forwards';
+                break;
+            case 'Fall_BackLeft':
+                return 'Falling - Backwards, to the Left';
+                break;
+            case 'Fall_BackLying':
+                return 'Falling - Backwards, Lying';
+                break;
+            case 'Fall_BackRight':
+                return 'Falling - Backwards, to the Right';
+                break;
+            case 'Fall_BackSitting':
+                return 'Falling - Backwards, Sitting';
+                break;
+            case 'Fall_FrontKnees':
+                return 'Falling - Forewards, onto Knees';
+                break;
+            case 'Fall_FrontLeft':
+                return 'Falling - Forewards, to the Left';
+                break;
+            case 'Fall_FrontLying':
+                return 'Falling - Forewards, Lying';
+                break;
+            case 'Fall_FrontLyingProtect':
+                return 'Falling - Forewards, Lying, Protected';
+                break;
+            case 'Fall_FrontRight':
+                return 'Falling - Forewards, to the Right';
+                break;
+            case 'Fall_Rolling':
+                return 'Falling - Rolling';
+                break;
+            case 'Fall_SidewayLeft':
+                return 'Falling - Sideways, to the Left';
+                break;
+            case 'Fall_SidewayRight':
+                return 'Falling - Sideways, to the Right';
+                break;
+        }
+    }
+
+    function fallLoadData() {
+        fallActivities = [];
+
+        jQuery.get(fallDataFolder+fallDataFile, function(data) {
+            var dataLines = data.split("\n");
+            for (i = 0; i < dataLines.length; i++) {
+                //Remove newline if necessary
+                var str = dataLines[i];
+                if (str.match(/[\n\r]$/)) {
+                    str = str.substring(0, str.length-1);
+                }
+
+                fallActivities.push( str );
+            }
+        });
+    }
+
+    function fallAddObjs() {
+        var loader = new THREE.JSONLoader(true);
+        loader.load ( fallAnimFolder+fallAnimFile+'.js', function (geometry) {
+            var material = geometry.materials[ 0 ];
+            material.morphTargets = true;
+
+            fallPerson = new THREE.MorphAnimMesh( geometry, new THREE.MeshFaceMaterial() );
+            fallPerson.scale.set(fallBLENDERSCALE, fallBLENDERSCALE, fallBLENDERSCALE);
+            fallPerson.overdraw = true;
+            fallPerson.castShadow = true;
+            fallPerson.receiveShadow = true;
+            fallPerson.position.set(0,100,0);
+            fallScene.add(fallPerson);
+
+            var f = fallGetActivityName(fallAnimFile);
+            $('#fallActivity').html(f);
+        } );
+    }
+
+    //loads the currently selected animation
+    function fallLoadAnim() {
+        fallHalt = true;
+        fallScene.remove(fallPerson);
+        fallAddObjs();
+        fallHalt = false;
+    }
+
+    //Animation Loop
+    function fallAnimate() {
+        var delta = fallClock.getDelta();
+
+        var time = $("#timelineForm").val() % fallActivities.length;
+
+        if (fallAnimFile != fallActivities[time]) {
+            fallAnimFile = fallActivities[time];
+
+            if (fallAnimFile) {
+                fallLoadAnim();
+            }
+        }
+
+        //Update person to correct keyframe
+        if (fallPerson) {
+
+            fallPerson.updateAnimation( fallSpeed * delta );
+        }
+
+        fallCanvasResize();
+
+        //Update the view
+        fallCamCntrl.update();
+        fallCamera.lookAt(fallScene.position);
+        fallRenderer.render(fallScene, fallCamera);
+        if (!fallHalt) {
+            window.requestAnimationFrame(fallAnimate, fallRenderer.domElement);
+        }
+    }
+
+    $(document).ready( function() {
+        fallInit();
+    });
+
+</script>
+
+
+</head>
+
+
+<body>
+
+<div class="overlay overlayText">
+    Activity: <span id="fallActivity">0</span>
+</div>
+
+<div class="overlay overlayCamera">
+    <a href="#fallcanvas"><img src="icons/front.png" id="fallFrontCamBtn"></a>
+    <a href="#fallcanvas"><img src="icons/left.png" id="fallLeftCamBtn"></a>
+    <a href="#fallcanvas"><img src="icons/right.png" id="fallRightCamBtn"></a>
+    <a href="#fallcanvas"><img src="icons/back.png" id="fallBackCamBtn"></a>
+    <a href="#fallcanvas"><img src="icons/reset.png" id="fallResetCamBtn"></a>
+    <a href="#fallcanvas"><img src="icons/full.png" id="fallFullBtn"></a>
+    <a href="#fallcanvas"><img src="icons/zoomIn.png" id="fallZoomInBtn"></a>
+    <a href="#fallcanvas"><img src="icons/ZoomOut.png" id="fallZoomOutBtn"></a>
+</div>
+
+<script type="text/javascript">
+    $('#fallFrontCamBtn').click( function() { //Sets camera to show front
+        fallResetCam();
+        fallCamera.position.set(0,0,400);
+        $.scrollTo( $('#fallContainer3D') );
+    });
+    $('#fallLeftCamBtn').click( function() { //Sets camera to show left side
+        fallResetCam();
+        fallCamera.position.set(400,0,0);
+        $.scrollTo( $('#fallContainer3D') );
+    });
+    $('#fallRightCamBtn').click( function() { //Sets camera to show right side
+        fallResetCam();
+        fallCamera.position.set(-400,0,0);
+        $.scrollTo( $('#fallContainer3D') );
+    });
+    $('#fallBackCamBtn').click( function() { //Sets camera to show back
+        fallResetCam();
+        fallCamera.position.set(0,0,-400);
+        $.scrollTo( $('#fallContainer3D') );
+    });
+    $('#fallResetCamBtn').click( function() { //Set camera back to default position
+        fallResetCam();
+    });
+    $('#fallFullBtn').click( function() { //Maximize this panel
+        $('#fall').toggleClass('fourcol twelvecol');
+        fallCanvasResize();
+        $.scrollTo( $('#fallContainer3D') );
+    });
+    $('#fallZoomInBtn').click( function(e) { //Zoom in
+        fallCamCntrl.zoomin(e);
+        $.scrollTo( $('#fallContainer3D') );
+    });
+    $('#fallZoomOutBtn').click( function(e) { //Zoom out
+        fallCamCntrl.zoomout(e);
+        $.scrollTo( $('#fallContainer3D') );
+    });
+</script>
+
+<div id="fallContainer3D" class="container3D">
+<a name="#fallcanvas"></a>
+</div>
+
+</body>
+</html>
