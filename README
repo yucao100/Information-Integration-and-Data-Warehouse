@@ -1,0 +1,144 @@
+README
+
+Project Description
+
+This project is based off of Explicit Semantic Analysis code developed by Cagatay Calli (ccalli@gmail.com) to replicate the ESA implementation described in Evgeniy Gabrilovich and Shaul Markovitch "Computing Semantic Relatedness using Wikipedia-based Explicit Semantic Analysis" (Proceedings of The 20th International Joint Conference on Artificial Intelligence (IJCAI)). The original code can be located here: https://github.com/faraday/wikiprep-esa. We used and edited their code to encapsulate image search and retrieval based off of related concepts determined by ESA.
+
+We also use ImageTerrier (http://www.imageterrier.org/) for image feature extraction, indexing, and searching
+
+Requirements
+
+-Mysql
+
+-Linux OS
+
+-JDK (Java Platform (JDK) 7)
+
+-Java IDE (we used Eclipse)
+
+- 20+ GB RAM
+
+Installation and Usage
+
+Getting a Wikipedia dump:
+
+1)You can either download an already preprocessed Wikipedia dump (we used the already preprocessed 2005 dump located here http://www.cs.technion.ac.il/~gabr/resources/code/wikiprep/wikiprep.html.)
+
+    or use Wikiprep to preprocess a more recent dump from here
+
+http://en.wikipedia.org/wiki/Wikipedia:Download.
+
+Create your Wikipedia database where ESA will pull the information that it needs to create its concept index from:
+
+    1) Setup mysql and create an empty database called wiki and/or wiki2 (depending on
+
+whether you’re using our code that we used on a sample of a wikipedia dump or the code we used on the whole dump depends on which database you will be writing to)
+
+2)The first ESA program that you need to run is scanLinks.py in your Linux terminal. Go to the appropriate directory then enter
+
+$ python scanLinks.py <name of your hgw.xml file>
+
+(This can take up from a few hours to a few days)
+
+3) Second run scanData.py in your Linux terminal. Go to the appropriate directory then
+
+enter
+
+    $ python scanData.py <name of hgw.xml file> --format=<format from
+
+Wikiprep-ESA ReadMe file>
+
+(This will take from 30 minutes to a few hours)
+
+Run ESA-Lucene to create index:
+
+    1) Put esa-lucene project from wikiprep-esa-master folder into your IDE
+
+    2) Run ESAWikipediaIndexer located in package edu.wiki.index
+
+        Arguments: <Lucene index folder>
+
+    3) Run IndexModifier located in package edu.wiki.modify
+
+    Arguments: <Lucene index folder>
+
+Create concept index for images based off of image captions:
+
+    1) Run  the setConcepts() method in the ConceptIndex class located in package
+
+MedicalImageESA (this will take a few hours to a few days depending on how many entries are in your image database)
+
+        -first choose and/or change the config  file to your specific imageclef database
+
+information
+
+Run search query:
+
+    1) Run the getResults() method in the ConceptIndex class located in package
+
+MedicalImageESA (this will take a few seconds to run)
+
+    -prints out the top 1000 related images from most related to least related
+
+Our class TestESA has a sample of how to use these methods.
+
+
+
+ImageTerrier (Chyeeka’s Implementation)
+
+Indexing
+
+1) First add the jar file “ImageTerrierTools-3.0.1-jar-with-dependencies.jar” to your Eclipse project’s referenced libraries.
+
+2) Write a main class that includes the code
+
+    BasicIndexer.main(args);
+
+3) Right click main class and go to “Run As” and select “Run Configurations...”
+
+4) In the Arguments tab under “Program Arguments” enter the input code for the BasicIndexer class (examples can be found here http://svn.code.sf.net/p/imageterrier/code/trunk/ImageTerrierTools/Documentation.markdown and here  http://svn.code.sf.net/p/imageterrier/code/trunk/ImageTerrierTools/Examples.markdown  ).
+
+Example: -o VisualWordIndex.idx -q visualWordVocabulary -qt RANDOMSET -k 100000 -p BYTE -ft SIFT /media/secondaryHardDrive/mschyb/Medical_Img_Data -v
+
+Also in the “VM arguments” section you need to enter your memory and space requirements
+
+(for example: -XX:-UseGCOverheadLimit -Xms2048m -Xmx6g)
+
+Another example can be found here http://svn.code.sf.net/p/imageterrier/code/trunk/ImageTerrierTools/imageterrier-indexer .
+
+Search and Retrieval
+
+1) Write a main class that includes the code
+
+    BasicSearcher.main(args);
+
+2) Right click main class and go to “Run As” and select “Run Configurations...”
+
+4) In the Arguments tab under “Program Arguments” enter the input code for the BasicSearcher class (examples can be found here http://svn.code.sf.net/p/imageterrier/code/trunk/ImageTerrierTools/Documentation.markdown and here  http://svn.code.sf.net/p/imageterrier/code/trunk/ImageTerrierTools/Examples.markdown  ).
+
+Example: -i VisualWordIndex.idx -dq -dr -l 10 -q /media/secondaryHardDrive/mschyb/Medical_Img_Data/Img20562 --time
+
+Also in the “VM arguments” section you need to enter your memory and space requirements
+
+(for example: -Xmx8g)
+
+Another example can be found here http://svn.code.sf.net/p/imageterrier/code/trunk/ImageTerrierTools/imageterrier-searcher .
+
+
+HELPFUL REFERENCES
+
+http://www.cs.technion.ac.il/~gabr/publications/papers/Egozi2011CBI.pdf
+
+http://www.cs.technion.ac.il/~gabr/resources//code/wikiprep/
+
+https://github.com/faraday/wikiprep-esa
+
+http://en.wikipedia.org/wiki/Wikipedia:Download
+
+http://svn.code.sf.net/p/imageterrier/code/trunk/ImageTerrierTools/Documentation.markdown
+
+http://svn.code.sf.net/p/imageterrier/code/trunk/ImageTerrierTools/Examples.markdown
+
+http://svn.code.sf.net/p/imageterrier/code/trunk/ImageTerrierTools/imageterrier-indexer
+
+http://svn.code.sf.net/p/imageterrier/code/trunk/ImageTerrierTools/imageterrier-searcher
