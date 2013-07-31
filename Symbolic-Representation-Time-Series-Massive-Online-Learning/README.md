@@ -1,0 +1,1 @@
+This is the sub-repository for Symbolic Representation of Time Series for Massive Online Learning.

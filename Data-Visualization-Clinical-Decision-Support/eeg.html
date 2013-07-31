@@ -1,0 +1,369 @@
+<html>
+<head>
+
+<script type="text/javascript">
+//By Chris Lenk for UTC REU 2012
+
+    var eegCamera;
+    var eegScene;
+    var eegCanvas;
+    var eegRenderer;
+    var eegCamCntrl;
+    //Dimensions of the canvas
+    var eegWidth;
+    var eegHeight;
+    //Camera variables
+    var eegViewAngle = 45;
+    var eegAspect;
+    var eegNear = 1;
+    var eegFar = 10000;
+
+    var eegHead;
+    var eegClock = new THREE.Clock();
+
+    //Keys
+    eegROT = 90;
+    eegZOOM = 88;
+    eegPAN = 67;
+
+    eegBLENDERSCALE = 7;
+    eegFPS = 12;
+    var radiusEEG = 1; //radius of the EEG nodes in the visualization
+    var eegHalt = false; //True stops the animation
+    var eegAnimOffset = 0; //Starting morphTarget in the animation
+    var eegDuration = 1667; //in ms
+    var eegKeyframes = 40;
+    var eegInterpolation = eegDuration / eegKeyframes;
+    var eegLastKeyframe = 0;
+    var eegCurrentKeyframe = 0;
+
+    var eegSpeed = 1000;
+
+    //EEG Nodes
+    var eegLeft1;
+    var eegLeft2;
+    var eegLeft3;
+    var eegLeft4;
+    var eegLeft5;
+    var eegLeft6;
+    var eegLeft7;
+    var eegRight1;
+    var eegRight2;
+    var eegRight3;
+    var eegRight4;
+    var eegRight5;
+    var eegRight6;
+    var eegRight7;
+    var eegNodes = [];
+
+    var eegFilenames = [
+        'left1',
+        'left2',
+        'left3',
+        'left4',
+        'left5',
+        'left6',
+        'left7',
+        'right1',
+        'right2',
+        'right3',
+        'right4',
+        'right5',
+        'right6',
+        'right7'];
+
+    var eegFolder = 'PatientData/Default/'; //default/initial
+    var eegVals; // array of arrays - one for each file/node, containing all that node's values
+
+    //Set up color gradient
+    var eegGradient = new Rainbow();
+
+    //Updates the canvas size on window resize
+    //Uses solution from WestLangley: https://github.com/mrdoob/three.js/issues/1406#issuecomment-4207064
+    //And here: http://learningthreejs.com/data/THREEx/docs/THREEx.WindowResize.html
+    function eegCanvasResize() {
+        if (eegCanvas) {
+            eegSetCanvasSize();
+            //Adjust the camera so objects look the same when resizing
+            eegCamera.aspect = eegWidth / eegHeight;
+            eegCamera.updateProjectionMatrix();
+        }
+    }
+
+    function eegSetCanvasSize() {
+        eegWidth = eegCanvas.clientWidth;
+        eegHeight = $(window).height() * visPanelFactor;
+
+        //JavaScript equivalent of min-height CSS
+        if ($('#eeg').hasClass('twelvecol')) {
+            eegHeight = 450;
+        } else if (eegHeight < 233) {
+            eegHeight = 233;
+        }
+
+        eegRenderer.setSize(eegWidth, eegHeight);
+    }
+
+    //Initializes the scene
+    function eegInit() {
+        //Set up the canvas to render on
+        eegCanvas = document.getElementById("eegContainer3D");
+
+        //Create and start the renderer and add it to the canvas
+        eegRenderer = new THREE.WebGLRenderer( {antialias: true} );
+        eegSetCanvasSize();
+        eegRenderer.shadowMapEnabled = true; //Turn on shadows
+        eegRenderer.shadowMapSoft = true; //Anti-aliasing
+        eegCanvas.appendChild(eegRenderer.domElement);
+        
+        //Create camera and scene
+        eegScene = new THREE.Scene();
+        eegAspect = eegWidth / eegHeight;
+        eegAddCamera();
+
+        //Disable text cursor on the canvas
+        eegCanvas.onselectstart = function() {
+            return false;
+        }
+
+        //Add stuff to the scene
+        eegAddObjs(eegScene);
+        eegAddLights(eegScene);
+        
+        //Draw it
+        eegRenderer.setClearColorHex(0x000000, 1.0);
+        eegRenderer.clear(); //Sets the background color
+        eegRenderer.render(eegScene, eegCamera);
+
+        //Set up keyboard listener
+        document.addEventListener("keydown", eegHandleKey, false);
+        
+        //Load the text files containing eeg values data
+        loadEEGdata();
+
+        //kickstart animation
+        eegAnimate();
+    }
+
+    function eegHandleKey(e) {
+        if (e.keyCode == 32) { //Spacebar
+            eegResetCam();
+        }
+    }
+
+    function loadEEGdata() {
+        eegHalt = true;
+
+        for (j = 0; j < eegFilenames.length; j++) {
+            eegVals = [];
+
+            jQuery.get(eegFolder+'eeg/'+eegFilenames[j]+".txt", function(data) {
+                eegVals.push(data.split(","));
+            });
+        }
+        eegHalt = false;
+    }
+
+    //Puts the camera back at the starting position, rotation, etc
+    function eegResetCam(e) {
+        eegScene.remove(eegCamera);
+        eegAddCamera();
+    }
+
+    function eegAddCamera() {
+        eegCamera = new THREE.PerspectiveCamera( eegViewAngle, eegAspect, eegNear, eegFar );
+        eegScene.add(eegCamera);
+        //Pull camera back from its original starting point of (0,0,0)
+        eegCamera.position.set(55,0,0);
+
+        //Controls to move the camera
+        eegCamCntrl = new THREE.TrackballControlsCustom(eegCamera, eegRenderer.domElement);
+        eegCamCntrl.keys = [eegROT, eegZOOM, eegPAN];
+    }
+
+    function eegAddObjs() {
+        var loader = new THREE.JSONLoader(true);
+        loader.load ( 'Lee-Perry-Smith.js', function (geometry) {
+            var material = new THREE.MeshLambertMaterial(
+                {color: 0x777777}
+            );
+
+            eegHead = new THREE.Mesh( geometry, material );
+            eegHead.scale.set(eegBLENDERSCALE, eegBLENDERSCALE, eegBLENDERSCALE);
+            eegHead.position.set(0,0,9);
+            eegHead.overdraw = true;
+            eegHead.castShadow = true;
+            eegHead.receiveShadow = true;
+            eegScene.add(eegHead);
+        } );
+
+        //x is left/right, y is up/down, z is away from front of head
+        eegLeft1 = eegAddSphere(6,8,9.75);
+        eegLeft2 = eegAddSphere(6,12.75,4);
+        eegLeft3 = eegAddSphere(8.5,2,7);
+        eegLeft4 = eegAddSphere(9.25,6,5);
+        eegLeft5 = eegAddSphere(11.5,5,-5);
+        eegLeft6 = eegAddSphere(11,-1,-4.5);
+        eegLeft7 = eegAddSphere(9.1,2,-13);
+        
+        eegRight1 = eegAddSphere(-6,9,9.25);
+        eegRight2 = eegAddSphere(-6,12.5,4);
+        eegRight3 = eegAddSphere(-8.75,2,7);
+        eegRight4 = eegAddSphere(-9.25,6,5);
+        eegRight5 = eegAddSphere(-11,5,-5);
+        eegRight6 = eegAddSphere(-10.75,-1,-4.5);
+        eegRight7 = eegAddSphere(-7.8,2,-13);
+
+        eegNodes.push(eegLeft1);
+        eegNodes.push(eegLeft2);
+        eegNodes.push(eegLeft3);
+        eegNodes.push(eegLeft4);
+        eegNodes.push(eegLeft5);
+        eegNodes.push(eegLeft6);
+        eegNodes.push(eegLeft7);
+        eegNodes.push(eegRight1);
+        eegNodes.push(eegRight2);
+        eegNodes.push(eegRight3);
+        eegNodes.push(eegRight4);
+        eegNodes.push(eegRight5);
+        eegNodes.push(eegRight6);
+        eegNodes.push(eegRight7);
+    }
+
+    function eegAddLights() {
+        //Create a spot light for shadows and add it
+        var spotLight = new THREE.SpotLight(0xFFFFFF);
+        spotLight.position.set(0,400,0);
+        spotLight.castShadow = true;
+        spotLight.shadowDarkness = 0.1;
+        eegScene.add(spotLight);
+
+        //Light for the left side of the face
+        var leftLight = new THREE.DirectionalLight(0xFFFFFF);
+        leftLight.position.set(100,0,0);
+        eegScene.add(leftLight);
+
+        //Light for the right side of the face
+        var rightLight = new THREE.DirectionalLight(0xFFFFFF);
+        rightLight.position.set(-100,0,0);
+        eegScene.add(rightLight);
+
+        //Ambient lighting
+        var ambLight = new THREE.AmbientLight(0x111111);
+        eegScene.add(ambLight);
+    }
+
+    function eegAddSphere(x, y, z) {
+        var segments = 16;
+        var rings = 16;
+        var sphereMaterial = new THREE.MeshLambertMaterial(
+            {color: 0xFF0000}
+        );
+
+        var node;
+        node = new THREE.Mesh(
+            new THREE.SphereGeometry( radiusEEG, segments, rings ), //Geometry
+            sphereMaterial //Material
+        );
+        node.position.set(x,y,z);
+        node.castShadow = true;
+        node.receiveShadow = true;
+        eegScene.add(node);
+        return node;
+    }
+
+    //Animation Loop
+    function eegAnimate() {
+        var time = eegClock.getElapsedTime();
+
+        for (i = 0; i < eegFilenames.length; i++) {
+            if (eegVals && eegVals[i]) {
+                var j = Math.floor($("#timelineForm").val() % eegVals.length);
+                if (eegVals[i][j]) {
+                    eegNodes[i].material.color = new THREE.Color( '0x' + eegGradient.colourAt( eegVals[i][j] ) );
+                }
+                
+            }
+        }
+
+        eegCanvasResize();
+
+        //Update the view
+        eegCamCntrl.update();
+        eegCamera.lookAt(eegScene.position);
+        eegRenderer.render(eegScene, eegCamera);
+
+        if (!eegHalt) {
+            window.requestAnimationFrame(eegAnimate, eegRenderer.domElement);
+        }
+    }
+
+    $(document).ready( function() {
+        eegInit();
+    });
+
+</script>
+
+
+</head>
+
+
+<body>
+
+<div class="overlay overlayCamera">
+    <a href="#eegcanvas"><img src="icons/front.png" id="eegFrontCamBtn"></a>
+    <a href="#eegcanvas"><img src="icons/left.png" id="eegLeftCamBtn"></a>
+    <a href="#eegcanvas"><img src="icons/right.png" id="eegRightCamBtn"></a>
+    <a href="#eegcanvas"><img src="icons/back.png" id="eegBackCamBtn"></a>
+    <a href="#eegcanvas"><img src="icons/reset.png" id="eegResetCamBtn"></a>
+    <a href="#eegcanvas"><img src="icons/full.png" id="eegFullBtn"></a>
+    <a href="#eegcanvas"><img src="icons/zoomIn.png" id="eegZoomInBtn"></a>
+    <a href="#eegcanvas"><img src="icons/ZoomOut.png" id="eegZoomOutBtn"></a>
+</div>
+
+<script type="text/javascript">
+    $('#eegFrontCamBtn').click( function() { //Sets camera to show front
+        eegResetCam();
+        eegCamera.position.set(0,0,55);
+        $.scrollTo( $('#eegContainer3D') );
+    });
+    $('#eegLeftCamBtn').click( function() { //Sets camera to show left side
+        eegResetCam();
+        eegCamera.position.set(55,0,0);
+        $.scrollTo( $('#eegContainer3D') );
+    });
+    $('#eegRightCamBtn').click( function() { //Sets camera to show right side
+        eegResetCam();
+        eegCamera.position.set(-55,0,0);
+        $.scrollTo( $('#eegContainer3D') );
+    });
+    $('#eegBackCamBtn').click( function() { //Sets camera to show back
+        eegResetCam();
+        eegCamera.position.set(0,0,-55);
+        $.scrollTo( $('#eegContainer3D') );
+    });
+    $('#eegResetCamBtn').click( function() { //Set camera back to default position
+        eegResetCam();
+        $.scrollTo( $('#eegContainer3D') );
+    });
+    $('#eegFullBtn').click( function() { //Maximize this panel
+        $('#eeg').toggleClass('fourcol twelvecol');
+        eegCanvasResize();
+        $.scrollTo( $('#eegContainer3D') );
+    });
+    $('#eegZoomInBtn').click( function(e) { //Zoom in
+        eegCamCntrl.zoomin(e);
+        $.scrollTo( $('#eegContainer3D') );
+    });
+    $('#eegZoomOutBtn').click( function(e) { //Zoom out
+        eegCamCntrl.zoomout(e);
+        $.scrollTo( $('#eegContainer3D') );
+    });
+</script>
+
+<div id="eegContainer3D" class="container3D">
+<a name="#eegcanvas"></a>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,280 @@
+<html>
+<head>
+
+<script type="text/javascript">
+//By Chris Lenk for UTC REU 2012
+
+    var ecgCamera;
+    var ecgScene;
+    var ecgCanvas;
+    var ecgRenderer;
+    var ecgCamCntrl;
+    //Dimensions of the canvas
+    var ecgWidth;
+    var ecgHeight;
+    //Camera variables
+    var ecgViewAngle = 45;
+    var ecgAspect;
+    var ecgNear = 0.1;
+    var ecgFar = 10000;
+
+    var heart;
+    var ecgClock = new THREE.Clock();
+
+    //Keys
+    ecgROT = 90;
+    ecgZOOM = 88;
+    ecgPAN = 67;
+
+    ecgFPS = 12;
+    var ecgBLENDERSCALE = 15;
+    var ecgHalt = false; //True stops the animation
+    var ecgAnimOffset = 0; //Starting morphTarget in the animation
+    var ecgDuration = 1667; //in ms
+    var ecgKeyframes = 40;
+    var ecgInterpolation = ecgDuration / ecgKeyframes;
+    var ecgLastKeyframe = 0;
+    var ecgCurrentKeyframe = 0;
+
+    var bpm = 80;
+    var heartrates = [];
+
+    var ecgDataFolder = '/Data-Visualization-Clinical-Decision-Support/PatientData/Default/';
+    var ecgDataFile = 'ecg/data.txt';
+
+    //Initializes the scene
+    function ecgInit() {
+        //Get canvas container3D
+        ecgCanvas = document.getElementById("ecgContainer3D");
+
+        //Create and start the renderer and add it to the canvas
+        ecgRenderer = new THREE.WebGLRenderer( {antialias: true} );
+        ecgSetCanvasSize();
+        ecgRenderer.shadowMapEnabled = true; //Turn on shadows
+        ecgRenderer.shadowMapSoft = true; //Anti-aliasing
+        ecgCanvas.appendChild(ecgRenderer.domElement);
+        
+        //Create camera and scene
+        ecgScene = new THREE.Scene();
+        ecgAddCamera();
+
+        //Disable text cursor on the canvas
+        ecgCanvas.onselectstart = function() {
+            return false;
+        }
+
+        //Add stuff to the scene
+        ecgAddObjs(ecgScene);
+        ecgAddLights(ecgScene);
+        
+        //Draw it
+        ecgRenderer.setClearColorHex(0x000000, 1.0);
+        ecgRenderer.clear(); //Sets the background color
+        ecgRenderer.render(ecgScene, ecgCamera);
+
+        //Set up keyboard listener
+        document.addEventListener("keydown", ecgHandleKey, false);
+
+        //Load the default data
+        ecgloadData();
+        
+        //kickstart animation
+        ecgAnimate();
+    }
+
+    //Updates the canvas size on window resize
+    //Uses solution from WestLangley: https://github.com/mrdoob/three.js/issues/1406#issuecomment-4207064
+    //And here: http://learningthreejs.com/data/THREEx/docs/THREEx.WindowResize.html
+    function ecgCanvasResize() {
+        if (ecgCanvas) {
+            ecgSetCanvasSize();
+            //Adjust the camera so objects look the same when resizing
+            ecgCamera.aspect = ecgWidth / ecgHeight;
+            ecgCamera.updateProjectionMatrix();
+        }
+    }
+
+    function ecgSetCanvasSize() {
+        ecgWidth = ecgCanvas.clientWidth;
+        ecgHeight = $(window).height() * visPanelFactor;
+
+        //JavaScript equivalent of min-height CSS
+        if ($('#ecg').hasClass('twelvecol')) {
+            ecgHeight = 450;
+        } else if (ecgHeight < 233) {
+            ecgHeight = 233;
+        }
+
+        ecgRenderer.setSize(ecgWidth, ecgHeight);
+    }
+
+    function ecgHandleKey(e) {
+        if (e.keyCode == 32) { //Spacebar
+            ecgResetCam();
+        }
+    }
+
+    //Puts the camera back at the starting position
+    function ecgResetCam() {
+        ecgScene.remove(ecgCamera);
+        ecgAddCamera();
+    }
+
+    function ecgAddCamera() {
+        ecgCamera = new THREE.PerspectiveCamera( ecgViewAngle, ecgAspect, ecgNear, ecgFar );
+        ecgScene.add(ecgCamera);
+        //Pull camera back from its original starting point of (0,0,0)
+        ecgCamera.position.set(30,40,25);
+
+        //Controls to move the camera
+        ecgCamCntrl = new THREE.TrackballControlsCustom(ecgCamera, ecgRenderer.domElement);
+        ecgCamCntrl.keys = [ecgROT, ecgZOOM, ecgPAN]; //rotate, zoom, pan
+    }
+
+    function ecgAddObjs() {
+        var loader = new THREE.JSONLoader(true);
+        loader.load ( 'Heart.js', function (geometry) {
+            var material = new THREE.MeshLambertMaterial(
+                {color: 0xCC0000}
+            );
+            material.morphTargets = true;
+
+            heart = new THREE.MorphAnimMesh( geometry, material );
+            heart.scale.set(ecgBLENDERSCALE, ecgBLENDERSCALE, ecgBLENDERSCALE);
+            heart.overdraw = true;
+            heart.castShadow = true;
+            heart.receiveShadow = true;
+            ecgScene.add(heart);
+        } );
+    }
+
+    function ecgAddLights() {
+        //Create a spot light for shadows and add it
+        var spotLight = new THREE.SpotLight(0xFFFFFF);
+        spotLight.position.set(300,300,400);
+        spotLight.castShadow = true;
+        ecgScene.add(spotLight);
+
+        //Directional light
+        var frontLight = new THREE.DirectionalLight(0x888888);
+        frontLight.position.set(400,900,200);
+        ecgScene.add(frontLight);
+
+        //Ambient lighting
+        var ambLight = new THREE.AmbientLight(0x111111);
+        ecgScene.add(ambLight);
+    }
+
+    function ecgloadData(callback) {
+        ecgHalt = true;
+
+        jQuery.get(ecgDataFolder+ecgDataFile, function(data) {
+            heartrates = [];
+            
+            var dataLines = data.split("\n");
+            for (i = 0; i < dataLines.length; i++) {
+                heartrates.push(dataLines[i]);
+            }
+
+            if (callback) callback();
+        });
+
+        ecgHalt = false;
+    }
+
+    //Animation Loop
+    function ecgAnimate() {
+        var delta = ecgClock.getDelta();
+        var time = $("#timelineForm").val() % heartrates.length;
+        bpm = heartrates[time];
+        $('#ecgOverlay').html(bpm);
+        var speed = (bpm / 60) * 1000; //convert BPM to a value compatible with delta for the animation
+
+        //Update heart to correct keyframe
+        if (heart) {
+            heart.updateAnimation( speed * delta );
+        }
+
+        ecgCanvasResize();
+
+        //Update the view
+        ecgCamCntrl.update();
+        ecgCamera.lookAt(ecgScene.position);
+        ecgRenderer.render(ecgScene, ecgCamera);
+        if (!ecgHalt) {
+            window.requestAnimationFrame(ecgAnimate, ecgRenderer.domElement);
+        }
+    }
+
+    $(document).ready(function() {
+      ecgInit();
+    });
+
+</script>
+
+</head>
+
+
+<body>
+
+<div class="overlay overlayText">
+    BPM: <span id="ecgOverlay">0</span>
+</div>
+
+<div class="overlay overlayCamera">
+    <a href="#ecgcanvas"><img src="icons/front.png" id="ecgFrontCamBtn"></a>
+    <a href="#ecgcanvas"><img src="icons/left.png" id="ecgLeftCamBtn"></a>
+    <a href="#ecgcanvas"><img src="icons/right.png" id="ecgRightCamBtn"></a>
+    <a href="#ecgcanvas"><img src="icons/back.png" id="ecgBackCamBtn"></a>
+    <a href="#ecgcanvas"><img src="icons/reset.png" id="ecgResetCamBtn"></a>
+    <a href="#ecgcanvas"><img src="icons/full.png" id="ecgFullBtn"></a>
+    <a href="#ecgcanvas"><img src="icons/zoomIn.png" id="ecgZoomInBtn"></a>
+    <a href="#ecgcanvas"><img src="icons/ZoomOut.png" id="ecgZoomOutBtn"></a>
+</div>
+
+<script type="text/javascript">
+    $('#ecgFrontCamBtn').click( function() { //Sets camera to show front
+        ecgResetCam();
+        ecgCamera.position.set(0,60,27);
+        $.scrollTo( $('#ecgContainer3D') );
+    });
+    $('#ecgLeftCamBtn').click( function() { //Sets camera to show left side
+        ecgResetCam();
+        ecgCamera.position.set(27,60,0);
+        $.scrollTo( $('#ecgContainer3D') );
+    });
+    $('#ecgRightCamBtn').click( function() { //Sets camera to show right side
+        ecgResetCam();
+        ecgCamera.position.set(-27,60,0);
+        $.scrollTo( $('#ecgContainer3D') );
+    });
+    $('#ecgBackCamBtn').click( function() { //Sets camera to show back
+        ecgResetCam();
+        ecgCamera.position.set(0,60,-27);
+        $.scrollTo( $('#ecgContainer3D') );
+    });
+    $('#ecgResetCamBtn').click( function() { //Set camera back to default position
+        ecgResetCam();
+        $.scrollTo( $('#ecgContainer3D') );
+    });
+    $('#ecgFullBtn').click( function() { //Maximize this panel
+        $('#ecg').toggleClass('fourcol twelvecol');
+        ecgCanvasResize();
+        $.scrollTo( $('#ecgContainer3D') );
+    });
+    $('#ecgZoomInBtn').click( function(e) { //Zoom in
+        ecgCamCntrl.zoomin(e);
+        $.scrollTo( $('#ecgContainer3D') );
+    });
+    $('#ecgZoomOutBtn').click( function(e) { //Zoom out
+        ecgCamCntrl.zoomout(e);
+        $.scrollTo( $('#ecgContainer3D') );
+    });
+</script>
+
+<div id="ecgContainer3D" class="container3D">
+<a name="#ecgcanvas"></a>
+</div>
+
+</body>
+</html>
