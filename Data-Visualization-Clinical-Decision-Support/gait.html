@@ -1,0 +1,278 @@
+<html>
+<head>
+
+<script type="text/javascript">
+//By Chris Lenk for UTC REU 2012
+
+    var gaitCamera;
+    var gaitCanvas;
+    var gaitScene;
+    var gaitRenderer;
+    var gaitCamCntrl;
+    //Dimensions of the canvas
+    var gaitWidth;
+    var gaitHeight;
+    //Camera variables
+    var gaitViewAngle = 45;
+    var gaitAspect;
+    var gaitNear = 0.1;
+    var gaitFar = 10000;
+
+    var gaitPerson;
+    var gaitClock = new THREE.Clock();
+
+    //Keys
+    gaitROT = 90;
+    gaitZOOM = 88;
+    gaitPAN = 67;
+
+    var gaitFolderpath = '/Data-Visualization-Clinical-Decision-Support/PatientData/Default/';
+    var gaitFilename = 'sample.txt';
+
+    gaitFPS = 12;
+    var gaitBLENDERSCALE = 15;
+    var gaitHalt = false; //True stops the animation
+    var gaitAnimOffset = 0; //Starting morphTarget in the animation
+    var gaitDuration = 1667; //in ms
+    var gaitKeyframes = 40;
+    var gaitInterpolation = gaitDuration / gaitKeyframes;
+    var gaitLastKeyframe = 0;
+    var gaitCurrentKeyframe = 0;
+
+    var gaitHumanAvgWalkSpeed = 1.3;
+    var gaitSteps = 0;
+    var gaitDist = 0;
+    gaitDefaultSpeed = 1000;
+    var gaitSpeed = 0;
+
+    //Initializes the scene
+    function gaitInit() {
+        //Get canvas container3D
+        gaitCanvas = document.getElementById("gaitContainer3D");
+
+        //Create and start the renderer and add it to the canvas
+        gaitRenderer = new THREE.WebGLRenderer( {antialias: true} );
+        gaitSetCanvasSize();
+        gaitRenderer.shadowMapEnabled = true; //Turn on shadows
+        gaitRenderer.shadowMapSoft = true; //Anti-aliasing
+        gaitCanvas.appendChild(gaitRenderer.domElement);
+        
+        //Create camera and scene
+        gaitScene = new THREE.Scene();
+        gaitAddCamera();
+
+        //Disable text cursor on the canvas
+        gaitCanvas.onselectstart = function() {
+            return false;
+        }
+
+        //Add stuff to the scene
+        gaitAddObjs(gaitScene);
+        gaitAddLights(gaitScene);
+
+        //Load data from file
+        loadGaitData();
+        
+        //Draw it
+        gaitRenderer.setClearColorHex(0x000000, 1.0);
+        gaitRenderer.clear(); //Sets the background color
+        gaitRenderer.render(gaitScene, gaitCamera);
+
+        //Set up keyboard listener
+        document.addEventListener("keydown", gaitHandleKey, false);
+        
+        //kickstart animation
+        gaitAnimate();
+    }
+
+    function loadGaitData() {
+        gaitHalt = true;
+
+        jQuery.get(gaitFolderpath+'gait/'+gaitFilename, function(data) {
+            var dataLines = data.split("\n");
+            $('#gaitDistTraveled').html(dataLines[0] + " meters");
+            $('#gaitAvgSpeed').html(dataLines[1] + " meters per second");
+            gaitSpeed = gaitDefaultSpeed * dataLines[1] / gaitHumanAvgWalkSpeed;
+        });
+
+        gaitHalt = false;
+    }
+
+    //Updates the canvas size on window resize
+    //Uses solution from WestLangley: https://github.com/mrdoob/three.js/issues/1406#issuecomment-4207064
+    //And here: http://learningthreejs.com/data/THREEx/docs/THREEx.WindowResize.html
+    function gaitCanvasResize() {
+        if (gaitCanvas) {
+            gaitSetCanvasSize();
+            //Adjust the camera so objects look the same when resizing
+            gaitCamera.aspect = gaitWidth / gaitHeight;
+            gaitCamera.updateProjectionMatrix();
+        }
+    }
+
+    function gaitSetCanvasSize() {
+        gaitWidth = gaitCanvas.clientWidth;
+        gaitHeight = $(window).height() * visPanelFactor;
+
+        //JavaScript equivalent of min-height CSS
+        if ($('#gait').hasClass('twelvecol')) {
+            gaitHeight = 450;
+        } else if (gaitHeight < 233) {
+            gaitHeight = 233;
+        }
+
+        gaitRenderer.setSize(gaitWidth, gaitHeight);
+    }
+
+    function gaitHandleKey(e) {
+        if (e.keyCode == 32) { //Spacebar
+            gaitResetCam();
+        }
+    }
+
+    //Puts the camera back at the starting position
+    function gaitResetCam(e) {
+        gaitScene.remove(gaitCamera);
+        gaitAddCamera();
+    }
+
+    function gaitAddCamera() {
+        gaitCamera = new THREE.PerspectiveCamera( gaitViewAngle, gaitAspect, gaitNear, gaitFar );
+        gaitScene.add(gaitCamera);
+        //Pull camera back from its original starting point of (0,0,0)
+        gaitCamera.position.set(100,0,200);
+
+        //Controls to move the camera
+        gaitCamCntrl = new THREE.TrackballControlsCustom(gaitCamera, gaitRenderer.domElement);
+        gaitCamCntrl.keys = [gaitROT, gaitZOOM, gaitPAN]; //rotate, zoom, pan
+
+        //Reset the camera when spacebar pressed
+        document.addEventListener("keydown", gaitResetCam, false);
+    }
+
+    function gaitAddObjs() {
+        var loader = new THREE.JSONLoader(true);
+        loader.load ( 'PersonAnimTest.js', function (geometry) {
+            var material = geometry.materials[ 0 ];
+            material.morphTargets = true;
+
+            gaitPerson = new THREE.MorphAnimMesh( geometry, new THREE.MeshFaceMaterial() );
+            gaitPerson.scale.set(gaitBLENDERSCALE, gaitBLENDERSCALE, gaitBLENDERSCALE);
+            gaitPerson.overdraw = true;
+            gaitPerson.castShadow = true;
+            gaitPerson.receiveShadow = true;
+            gaitScene.add(gaitPerson);
+        } );
+    }
+
+    function gaitAddLights() {
+        //Create a spot light for shadows and add it
+        var spotLight = new THREE.SpotLight(0xFFFFFF);
+        spotLight.position.set(300,300,400);
+        spotLight.castShadow = true;
+        gaitScene.add(spotLight);
+
+        //Directional light
+        var frontLight = new THREE.DirectionalLight(0x888888);
+        frontLight.position.set(400,900,200);
+        gaitScene.add(frontLight);
+
+        //Ambient lighting
+        var ambLight = new THREE.AmbientLight(0x111111);
+        gaitScene.add(ambLight);
+    }
+
+    //Animation Loop
+    function gaitAnimate() {
+        var delta = gaitClock.getDelta();
+
+        //Update gaitPerson to correct keyframe
+        if (gaitPerson) {
+            gaitPerson.updateAnimation( gaitSpeed * delta );
+        }
+
+        gaitCanvasResize();
+
+        //Update the view
+        gaitCamCntrl.update();
+        gaitCamera.lookAt(gaitScene.position);
+        gaitRenderer.render(gaitScene, gaitCamera);
+        if (!gaitHalt) {
+            window.requestAnimationFrame(gaitAnimate, gaitRenderer.domElement);
+        }
+    }
+
+    $(document).ready(function() {
+      gaitInit();
+    });
+
+</script>
+
+
+</head>
+
+
+<body>
+
+<div class="overlay overlayText">
+    Distance traveled: <span id="gaitDistTraveled">0</span><br />
+    Average Speed: <span id="gaitAvgSpeed">0</span>
+</div>
+
+<div class="overlay overlayCamera">
+    <a href="#gaitcanvas"><img src="icons/front.png" id="gaitFrontCamBtn"></a>
+    <a href="#gaitcanvas"><img src="icons/left.png" id="gaitLeftCamBtn"></a>
+    <a href="#gaitcanvas"><img src="icons/right.png" id="gaitRightCamBtn"></a>
+    <a href="#gaitcanvas"><img src="icons/back.png" id="gaitBackCamBtn"></a>
+    <a href="#gaitcanvas"><img src="icons/reset.png" id="gaitResetCamBtn"></a>
+    <a href="#gaitcanvas"><img src="icons/full.png" id="gaitFullBtn"></a>
+    <a href="#gaitcanvas"><img src="icons/zoomIn.png" id="gaitZoomInBtn"></a>
+    <a href="#gaitcanvas"><img src="icons/ZoomOut.png" id="gaitZoomOutBtn"></a>
+</div>
+
+<script type="text/javascript">
+    $('#gaitFrontCamBtn').click( function() { //Sets camera to show front
+        gaitResetCam();
+        gaitCamera.position.set(0,0,150);
+        $.scrollTo( $('#gaitContainer3D') );
+    });
+    $('#gaitLeftCamBtn').click( function() { //Sets camera to show left side
+        gaitResetCam();
+        gaitCamera.position.set(150,0,0);
+        $.scrollTo( $('#gaitContainer3D') );
+    });
+    $('#gaitRightCamBtn').click( function() { //Sets camera to show right side
+        gaitResetCam();
+        gaitCamera.position.set(-150,0,0);
+        $.scrollTo( $('#gaitContainer3D') );
+    });
+    $('#gaitBackCamBtn').click( function() { //Sets camera to show back
+        gaitResetCam();
+        gaitCamera.position.set(0,0,-150);
+        $.scrollTo( $('#gaitContainer3D') );
+    });
+    $('#gaitResetCamBtn').click( function() { //Set camera back to default position
+        gaitResetCam();
+        $.scrollTo( $('#gaitContainer3D') );
+    });
+    $('#gaitFullBtn').click( function() { //Maximize this panel
+        $('#gait').toggleClass('fourcol twelvecol');
+        gaitCanvasResize();
+        $.scrollTo( $('#gaitContainer3D') );
+    });
+    $('#gaitZoomInBtn').click( function(e) { //Zoom in
+        gaitCamCntrl.zoomin(e);
+        $.scrollTo( $('#gaitContainer3D') );
+    });
+    $('#gaitZoomOutBtn').click( function(e) { //Zoom out
+        gaitCamCntrl.zoomout(e);
+        $.scrollTo( $('#gaitContainer3D') );
+    });
+</script>
+
+<div id="gaitContainer3D" class="container3D">
+<a name="#gaitcanvas"></a>
+</div>
+
+</body>
+</html>
