@@ -1,5 +1,0 @@
-stopcondition {
-  all_processed: true
-}
-data_proto: "~/Documents/imageclef_2013/imageclef_2013.pbtxt" 
-batchsize: 100
