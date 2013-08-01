@@ -1,0 +1,13 @@
+optimizer : CD
+stopcondition {
+  all_processed: false
+  steps: 100000
+}
+train: true 
+batchsize: 100
+data_proto: "/home/rssteffey/Documents/testdata/data1.pbtxt"
+eval_after: 1000
+checkpoint_after: 100000
+checkpoint_directory: "~/Documents/testdata/models"
+show_after: 1000
+randomize: true
